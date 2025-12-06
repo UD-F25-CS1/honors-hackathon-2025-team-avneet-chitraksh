@@ -277,6 +277,36 @@ add_website_css("""
     }
     
     /* Responsive design */
+    /* Day tile selector */
+    .day-tile {
+        display: inline-block;
+        padding: 12px 18px;
+        background: white;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #666;
+        transition: all 0.2s ease;
+        min-width: 50px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        cursor: pointer;
+    }
+    
+    .day-tile:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(102,126,234,0.2);
+    }
+    
+    .day-tile.selected {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        border-color: #667eea;
+        color: white;
+        box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+    }
+    
     @media (max-width: 768px) {
         .container {
             padding: 20px;
@@ -330,27 +360,65 @@ class State:
     study_events: list[StudyEvent] = field(default_factory=list)
     tips: str = ""
     current_step: str = "welcome"  # welcome, major, semester_dates, courses, clubs, generate
+    # Temporary fields for manual entry persistence
+    temp_course_name: str = ""
+    temp_credits: str = "3"
+    temp_time: str = ""
+    temp_days: dict = field(default_factory=lambda: {
+        "day_monday": "",
+        "day_tuesday": "",
+        "day_wednesday": "",
+        "day_thursday": "",
+        "day_friday": "",
+        "day_saturday": "",
+        "day_sunday": ""
+    })
     
 # Helper function to parse CSV
-def parse_course_csv(csv_content: str) -> list[Course]:
-    """Parse CSV content and return list of courses"""
+def parse_course_csv(csv_content: str) -> tuple[list[Course], list[str]]:
+    """Parse CSV content and return list of courses and errors"""
     courses = []
+    errors = []
     lines = csv_content.strip().split('\n')
     
     # Skip header if present
     start_idx = 1 if lines and ('course' in lines[0].lower() or 'name' in lines[0].lower()) else 0
     
-    for line in lines[start_idx:]:
+    for idx, line in enumerate(lines[start_idx:], start=start_idx+1):
         if line.strip():
             parts = [p.strip() for p in line.split(',')]
             if len(parts) >= 4:
-                courses.append(Course(
-                    name=parts[0],
-                    credits=int(parts[1]) if parts[1].isdigit() else 3,
-                    days=parts[2],
-                    time=parts[3]
-                ))
-    return courses
+                name, credits, days, time = parts[0], parts[1], parts[2], parts[3]
+                valid = True
+                
+                # Validate required fields
+                if not name or not days or not time:
+                    errors.append(f"Row {idx}: Missing required fields (name, days, or time).")
+                    valid = False
+                
+                # Validate credits
+                try:
+                    int_credits = int(credits) if credits.isdigit() else 3
+                except:
+                    errors.append(f"Row {idx}: Invalid credits value '{credits}' (must be a number).")
+                    valid = False
+                
+                # Validate time format
+                if valid and '-' not in time:
+                    errors.append(f"Row {idx}: Invalid time format '{time}' (expected format: 'HH:MM AM/PM - HH:MM AM/PM').")
+                    valid = False
+                
+                if valid:
+                    courses.append(Course(
+                        name=name,
+                        credits=int_credits,
+                        days=days,
+                        time=time
+                    ))
+            else:
+                errors.append(f"Row {idx}: Not enough columns (expected at least 4: Name, Credits, Days, Time).")
+    
+    return courses, errors
 
 # Routes
 @route
@@ -451,12 +519,28 @@ def upload_csv_page(state: State) -> Page:
 def parse_csv(state: State, csv_file: str) -> Page:
     """Parse uploaded CSV and display courses"""
     try:
-        state.courses = parse_course_csv(csv_file)
+        state.courses, errors = parse_course_csv(csv_file)
         print(f"✅ Parsed {len(state.courses)} courses from CSV")
         for course in state.courses[:5]:  # Print first 5
             print(f"  - {course.name}: {course.days} at {course.time}")
         if len(state.courses) > 5:
             print(f"  ... and {len(state.courses) - 5} more")
+        
+        # If there were errors, show them
+        if errors:
+            error_list = BulletedList(errors)
+            return Page(state, [
+                Header("Some rows were skipped due to errors", 2),
+                LineBreak(),
+                f"Successfully parsed {len(state.courses)} courses, but encountered {len(errors)} error(s):",
+                LineBreak(),
+                error_list,
+                LineBreak(),
+                Button("Continue with parsed courses", show_courses),
+                LineBreak(),
+                Button("← Try uploading again", upload_csv_page)
+            ])
+        
         return show_courses(state)
     except Exception as e:
         print(f"❌ Error parsing CSV: {e}")
@@ -507,84 +591,90 @@ def manual_course_entry(state: State) -> Page:
             LineBreak(),
             "Course Name:",
             LineBreak(),
-            TextBox("course_name"),
+            TextBox("course_name", state.temp_course_name),
             LineBreak(),
             LineBreak(),
             "Credits:",
             LineBreak(),
-            SelectBox("credits", ["1", "2", "3", "4", "5"], "3"),
+            SelectBox("credits", ["1", "2", "3", "4", "5"], state.temp_credits),
             LineBreak(),
             LineBreak(),
             "Days of the Week:",
             LineBreak(),
+            # Build day selector with proper checkbox handling and visual feedback
             """<div style='display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;'>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_monday' value='M' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>M</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>M</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_tuesday' value='Tu' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Tu</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Tu</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_wednesday' value='W' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>W</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>W</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_thursday' value='Th' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Th</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Th</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_friday' value='F' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>F</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>F</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_saturday' value='Sa' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Sa</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Sa</span>
                 </label>
-                <label style='cursor: pointer;'>
+                <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_sunday' value='Su' style='display: none;'>
-                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Su</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Su</span>
                 </label>
             </div>
-            <style>
-                .day-tile {
-                    display: inline-block;
-                    padding: 12px 18px;
-                    background: white;
-                    border: 2px solid #e0e0e0;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    color: #666;
-                    transition: all 0.2s ease;
-                    min-width: 50px;
-                    text-align: center;
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            <script>
+                function toggleDay(labelElement) {
+                    const checkbox = labelElement.querySelector('input[type="checkbox"]');
+                    const tile = labelElement.querySelector('.day-tile');
+                    checkbox.checked = !checkbox.checked;
+                    
+                    if (checkbox.checked) {
+                        tile.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        tile.style.borderColor = '#667eea';
+                        tile.style.color = 'white';
+                        tile.style.boxShadow = '0 4px 12px rgba(102,126,234,0.4)';
+                    } else {
+                        tile.style.background = 'white';
+                        tile.style.borderColor = '#e0e0e0';
+                        tile.style.color = '#666';
+                        tile.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                    }
                 }
-                .day-tile:hover {
-                    border-color: #667eea;
-                    background: #f8f9ff;
-                    transform: translateY(-2px);
-                    box-shadow: 0 4px 8px rgba(102,126,234,0.2);
-                }
-                .day-tile.selected {
-                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                    border-color: #667eea;
-                    color: white;
-                    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
-                }
-            </style>""",
+                
+                // Initialize tiles based on checkbox state when page loads
+                document.addEventListener('DOMContentLoaded', function() {
+                    document.querySelectorAll('input[type="checkbox"][name^="day_"]').forEach(checkbox => {
+                        const tile = checkbox.parentElement.querySelector('.day-tile');
+                        if (checkbox.checked && tile) {
+                            tile.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                            tile.style.borderColor = '#667eea';
+                            tile.style.color = 'white';
+                            tile.style.boxShadow = '0 4px 12px rgba(102,126,234,0.4)';
+                        }
+                    });
+                });
+            </script>""",
             LineBreak(),
             LineBreak(),
             "Time (e.g., 9:00 AM - 9:50 AM):",
             LineBreak(),
-            TextBox("time"),
+            TextBox("time", state.temp_time),
             LineBreak(),
             LineBreak(),
-            Button("Add Course", "/add_course"),
+            Button("Add Course", add_course),
             LineBreak(),
             LineBreak(),
-            Button("← Back", "/choose_course_input"),
+            Button("← Back", choose_course_input),
             classes="container"
         )
     ])
@@ -601,6 +691,20 @@ def add_course(state: State, course_name: str, credits: str, time: str,
         state.semester_start = semester_start
     if semester_end:
         state.semester_end = semester_end
+    
+    # Save temp fields for persistence
+    state.temp_course_name = course_name
+    state.temp_credits = credits
+    state.temp_time = time
+    state.temp_days = {
+        "day_monday": day_monday,
+        "day_tuesday": day_tuesday,
+        "day_wednesday": day_wednesday,
+        "day_thursday": day_thursday,
+        "day_friday": day_friday,
+        "day_saturday": day_saturday,
+        "day_sunday": day_sunday
+    }
     
     # Combine selected days into a string
     days_list = []
@@ -621,6 +725,19 @@ def add_course(state: State, course_name: str, credits: str, time: str,
             days=days,
             time=time
         ))
+        # Clear temp fields after successful add
+        state.temp_course_name = ""
+        state.temp_credits = "3"
+        state.temp_time = ""
+        state.temp_days = {
+            "day_monday": "",
+            "day_tuesday": "",
+            "day_wednesday": "",
+            "day_thursday": "",
+            "day_friday": "",
+            "day_saturday": "",
+            "day_sunday": ""
+        }
     return show_courses(state)
 
 @route
@@ -1739,8 +1856,8 @@ Focus on:
         import traceback
         traceback.print_exc()
     
-    # Return a simple completion page for the iframe
-    return Page(state, ["<html><body><h1>Generation Complete</h1></body></html>"])
+    # Return a page that redirects to show_results (with updated state containing study events)
+    return show_results(state)
 
 @route
 def show_results(state: State) -> Page:
@@ -1874,7 +1991,7 @@ def show_results(state: State) -> Page:
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {{
-        var calendarEl = document.getElementById('calendar');
+        var calendarEl = document.getElementById('results-calendar');
         if (!calendarEl) {{
             console.error('Calendar element not found!');
             return;
@@ -1901,7 +2018,7 @@ def show_results(state: State) -> Page:
                 var eventType = info.event.extendedProps.type === 'class' ? '📚 Class' : '✏️ Study Session';
                 var eventDetails = 
                     eventType + '\\n\\n' +
-                    '� ' + info.event.title + '\\n\\n' +
+                    '🏷️ ' + info.event.title + '\\n\\n' +
                     '🕒 ' + info.event.start.toLocaleString('en-US', {{ 
                         weekday: 'long', 
                         month: 'long', 
@@ -1947,7 +2064,7 @@ def show_results(state: State) -> Page:
             // Update count
             document.getElementById('event-count').textContent = 
                 'Showing ' + filteredEvents.length + ' events (' + 
-                ({len(state.study_events)} + ' study sessions, ' + {len(class_events)} + ' class meetings)';
+                {len(state.study_events)} + ' study sessions, ' + {len(class_events)} + ' class meetings)';
         }}
         
         document.getElementById('filter-study').addEventListener('change', function(e) {{
@@ -1983,46 +2100,24 @@ def show_results(state: State) -> Page:
             HorizontalRule(),
             LineBreak(),
             
-            # Filter Sidebar and Calendar Container
-            "<div style='display: flex; gap: 20px;'>",
+            # Calendar View
+            change_color(Header("📅 Your Complete Schedule", 2), "#667eea"),
+            "<p id='event-count' style='color: #666; font-size: 14px;'>Showing " + str(len(state.study_events) + len(class_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " class meetings)</p>",
             
-            # Sidebar with filters
-            """<div style='min-width: 200px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); height: fit-content;'>
-                <h3 style='margin-top: 0; color: #667eea;'>📊 Filters</h3>
-                <div style='margin: 15px 0;'>
-                    <label style='display: flex; align-items: center; cursor: pointer; padding: 8px; border-radius: 5px; transition: background 0.2s;' onmouseover='this.style.background="#f8f9fa"' onmouseout='this.style.background="transparent"'>
-                        <input type='checkbox' id='filter-study' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
-                        <span style='font-weight: 500;'>✏️ Study Sessions</span>
-                    </label>
-                </div>
-                <div style='margin: 15px 0;'>
-                    <label style='display: flex; align-items: center; cursor: pointer; padding: 8px; border-radius: 5px; transition: background 0.2s;' onmouseover='this.style.background="#f8f9fa"' onmouseout='this.style.background="transparent"'>
-                        <input type='checkbox' id='filter-classes' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
-                        <span style='font-weight: 500;'>📚 Classes</span>
-                    </label>
-                </div>
-                <hr style='margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;'>
-                <div style='font-size: 12px; color: #666; line-height: 1.6;'>
-                    <strong>Legend:</strong><br>
-                    <span style='display: inline-block; width: 12px; height: 12px; background: #667eea; border-radius: 2px; margin-right: 5px;'></span> Study Sessions<br>
-                    <span style='display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 2px; margin-right: 5px;'></span> Classes
-                </div>
+            # Filters
+            """<div style='display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;'>
+                <label style='display: flex; align-items: center; cursor: pointer;'>
+                    <input type='checkbox' id='filter-study' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+                    <span style='font-weight: 500;'>✏️ Study Sessions</span>
+                </label>
+                <label style='display: flex; align-items: center; cursor: pointer;'>
+                    <input type='checkbox' id='filter-classes' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+                    <span style='font-weight: 500;'>📚 Classes</span>
+                </label>
             </div>""",
             
-            # Calendar View
-            "<div style='flex: 1;'>",
-            change_color(Header("📅 Interactive Schedule Calendar", 2), "#667eea"),
-            "<p id='event-count' style='color: #666;'>Showing " + str(len(state.study_events) + len(class_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " class meetings)</p>",
-            (f"<div style='padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin-bottom: 20px;'>"
-             f"<strong>⚠️ Debug Info:</strong><br>"
-             f"Courses: {len(state.courses)}<br>"
-             f"Study Events: {len(state.study_events)}<br>"
-             f"Class Events Generated: {len(class_events)}<br>"
-             f"Semester: {state.semester_start} to {state.semester_end}</div>") if True else "",
-            "<div id='calendar' style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 600px;'></div>",
-            "</div>",
-            
-            "</div>",  # Close flex container
+            # Calendar Container
+            "<div id='results-calendar' style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 600px;'></div>",
             
             LineBreak(),
             LineBreak(),
@@ -2038,57 +2133,12 @@ def show_results(state: State) -> Page:
             
             LineBreak(),
             LineBreak(),
-            
-            # Event List (as backup/reference)
-            "<details style='margin: 20px 0;'>",
-            "<summary style='cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: 600;'>📋 View Complete Schedule List</summary>",
-            "<div style='padding: 20px; background: #f8f9fa;'>",
-            "<h4 style='color: #667eea;'>✏️ Study Sessions</h4>",
-            *[
-                f"<div style='margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #667eea; border-radius: 5px;'>"
-                f"<strong>{event.title}</strong><br>"
-                f"📅 {event.start_datetime[:10]} | 🕒 {event.start_datetime[11:16]} - {event.end_datetime[11:16]}<br>"
-                f"📝 {event.description}</div>"
-                for event in state.study_events
-            ] if state.study_events else ["<p>No study sessions generated.</p>"],
-            "<h4 style='color: #e74c3c; margin-top: 20px;'>📚 Classes</h4>",
-            *[
-                f"<div style='margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #e74c3c; border-radius: 5px;'>"
-                f"<strong>{course.name}</strong><br>"
-                f"📅 {course.days} | 🕒 {course.time}<br>"
-                f"📝 {course.credits} credits</div>"
-                for course in state.courses
-            ] if state.courses else ["<p>No classes added.</p>"],
-            "</div>",
-            "</details>",
-            
-            LineBreak(),
             HorizontalRule(),
             LineBreak(),
             
-            # Export Section
-            """<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white; text-align: center;'>
-                <h3 style='margin: 0 0 10px 0;'>📥 Export Your Schedule</h3>
-                <p style='margin: 0 0 15px 0; opacity: 0.9;'>Download as CSV to import into Google Calendar, Outlook, or other calendar apps</p>
-                <a href='/export_csv' style='display: inline-block; background: white; color: #667eea; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;' onmouseover='this.style.transform="translateY(-2px)"' onmouseout='this.style.transform="translateY(0)"'>
-                    📥 Download CSV
-                </a>
-            </div>""",
+            # Button to go back
+            Button("🔄 Start Over", "/"),
             
-            LineBreak(),
-            HorizontalRule(),
-            LineBreak(),
-            Div(
-                Button("🔄 Start Over", "/"),
-                " ",
-                Button("✏️ Modify Schedule", "/clubs_page"),
-                classes="button-group"
-            ),
-            LineBreak(),
-            change_text_align(
-                Text("💡 Tip: Use the sidebar filters to show/hide study sessions or classes. Click on calendar events to see details!"),
-                "center"
-            ),
             classes="container"
         )
     ])
