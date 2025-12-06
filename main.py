@@ -324,16 +324,23 @@ STUDY TIPS:
     
     try:
         response = call_gemini(conversation)
-        full_response = response.text
         
-        # Try to split into schedule and tips
-        if "STUDY TIPS:" in full_response:
-            parts = full_response.split("STUDY TIPS:")
-            state.study_schedule = parts[0].replace("STUDY SCHEDULE:", "").strip()
-            state.tips = parts[1].strip()
+        # Check if response is an error
+        if isinstance(response, LLMError):
+            state.study_schedule = f"Error: {response.error}"
+            state.tips = "The AI service encountered an issue. Please make sure the Gemini server is accessible and try again."
         else:
-            state.study_schedule = full_response
-            state.tips = "Check your schedule above for details!"
+            # Response is LLMResponse, extract text
+            full_response = response.text
+            
+            # Try to split into schedule and tips
+            if "STUDY TIPS:" in full_response:
+                parts = full_response.split("STUDY TIPS:")
+                state.study_schedule = parts[0].replace("STUDY SCHEDULE:", "").strip()
+                state.tips = parts[1].strip()
+            else:
+                state.study_schedule = full_response
+                state.tips = "Check your schedule above for details!"
             
     except Exception as e:
         state.study_schedule = f"Error generating schedule: {str(e)}"
@@ -369,7 +376,7 @@ def show_results(state: State) -> Page:
         LineBreak(),
         italic("Tip: Screenshot this schedule for easy reference!")
     ])
-
+hide_debug_information()
 # Start the server
 start_server(State())
 
