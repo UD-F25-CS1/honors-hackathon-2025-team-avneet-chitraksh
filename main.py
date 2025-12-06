@@ -300,7 +300,7 @@ def generate_schedule(state: State) -> Page:
         for c in state.clubs
     ]) if state.clubs else "No clubs/activities"
     
-    prompt = f"""You are a study scheduling assistant. A student majoring in {state.major} needs help creating a study schedule.
+    prompt = f"""You are a study scheduling assistant. A student majoring in {state.major} needs help creating a study schedule for the next couple of weeks.
 
 Their courses:
 {course_info}
@@ -308,17 +308,34 @@ Their courses:
 Their clubs/activities:
 {club_info}
 
+IMPORTANT CONSTRAINTS:
+- DO NOT schedule any study sessions between 11:00 PM and 6:00 AM (students need sleep!)
+- Only schedule study sessions between 6:00 AM and 11:00 PM
+- Avoid scheduling during their class times and club activities
+- Consider meal times (breakfast, lunch, dinner)
+
 Please create:
-1. A weekly study schedule with specific time blocks for each course
-2. Study tips tailored to each subject/course
-3. Prioritize courses based on their major ({state.major}) and credit hours
+1. A detailed weekly study schedule for the next 2 weeks with specific day/time blocks for each course
+   - Include date, day of week, time range, and subject
+   - Suggest 1-3 hour study blocks
+   - Prioritize courses based on their major ({state.major}) and credit hours
+   - Balance the workload across the week
+   
+2. Subject-specific study tips for each course
+   - Tailor recommendations to the course subject
+   - Suggest study techniques appropriate for that field
 
 Format your response in two clear sections:
+
 STUDY SCHEDULE:
-[specific times and subjects]
+Week 1:
+[specific dates, days, times and subjects - remember no scheduling between 11pm-6am]
+
+Week 2:
+[specific dates, days, times and subjects - remember no scheduling between 11pm-6am]
 
 STUDY TIPS:
-[tips for each course]"""
+[tips for each specific course]"""
     
     conversation = [LLMMessage("user", prompt)]
     
@@ -327,11 +344,11 @@ STUDY TIPS:
         
         # Check if response is an error
         if isinstance(response, LLMError):
-            state.study_schedule = f"Error: {response.error}"
-            state.tips = "The AI service encountered an issue. Please make sure the Gemini server is accessible and try again."
+            state.study_schedule = f"Error: {response.message}"
+            state.tips = "The AI service encountered an issue. Please make sure the Gemini proxy server is accessible and try again."
         else:
-            # Response is LLMResponse, extract text
-            full_response = response.text
+            # Response is LLMResponse, extract content
+            full_response = response.content
             
             # Try to split into schedule and tips
             if "STUDY TIPS:" in full_response:
