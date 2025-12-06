@@ -312,13 +312,24 @@ class ClubActivity:
     time: str
 
 @dataclass
+class StudyEvent:
+    """Represents a study session event for the calendar"""
+    title: str
+    start_datetime: str  # ISO format: "2025-12-09T19:00:00"
+    end_datetime: str    # ISO format: "2025-12-09T21:00:00"
+    course_code: str
+    description: str
+
+@dataclass
 class State:
     major: str = ""
     courses: list[Course] = field(default_factory=list)
     clubs: list[ClubActivity] = field(default_factory=list)
-    study_schedule: str = ""
+    semester_start: str = "2025-12-09"  # Default to next week
+    semester_end: str = "2026-05-15"     # Default to end of spring semester
+    study_events: list[StudyEvent] = field(default_factory=list)
     tips: str = ""
-    current_step: str = "welcome"  # welcome, major, courses, clubs, generate
+    current_step: str = "welcome"  # welcome, major, semester_dates, courses, clubs, generate
     
 # Helper function to parse CSV
 def parse_course_csv(csv_content: str) -> list[Course]:
@@ -461,37 +472,70 @@ def parse_csv(state: State, csv_file: str) -> Page:
 def manual_course_entry(state: State) -> Page:
     """Page for manually entering courses"""
     return Page(state, [
-        Header("Add Course Manually", 2),
-        LineBreak(),
-        "Course Name:",
-        LineBreak(),
-        TextBox("course_name"),
-        LineBreak(),
-        LineBreak(),
-        "Credits:",
-        LineBreak(),
-        SelectBox("credits", ["1", "2", "3", "4", "5"], "3"),
-        LineBreak(),
-        LineBreak(),
-        "Days (e.g., MWF, TTh, MW):",
-        LineBreak(),
-        TextBox("days"),
-        LineBreak(),
-        LineBreak(),
-        "Time (e.g., 9:00 AM - 9:50 AM):",
-        LineBreak(),
-        TextBox("time"),
-        LineBreak(),
-        LineBreak(),
-        Button("Add Course", add_course),
-        LineBreak(),
-        LineBreak(),
-        Button("← Back", choose_course_input)
+        Div(
+            Header("Add Course Manually", 2),
+            LineBreak(),
+            
+            # Semester Dates Section
+            Div(
+                Header("📅 Semester Dates", 3),
+                "When does your semester start?",
+                LineBreak(),
+                TextBox("semester_start", state.semester_start, placeholder="YYYY-MM-DD (e.g., 2025-12-09)"),
+                LineBreak(),
+                LineBreak(),
+                "When does your semester end?",
+                LineBreak(),
+                TextBox("semester_end", state.semester_end, placeholder="YYYY-MM-DD (e.g., 2026-05-15)"),
+                classes="info-box"
+            ),
+            LineBreak(),
+            LineBreak(),
+            HorizontalRule(),
+            LineBreak(),
+            
+            # Course Entry Section
+            Header("➕ Add a Course", 3),
+            LineBreak(),
+            "Course Name:",
+            LineBreak(),
+            TextBox("course_name"),
+            LineBreak(),
+            LineBreak(),
+            "Credits:",
+            LineBreak(),
+            SelectBox("credits", ["1", "2", "3", "4", "5"], "3"),
+            LineBreak(),
+            LineBreak(),
+            "Days (e.g., MWF, TTh, MW):",
+            LineBreak(),
+            TextBox("days"),
+            LineBreak(),
+            LineBreak(),
+            "Time (e.g., 9:00 AM - 9:50 AM):",
+            LineBreak(),
+            TextBox("time"),
+            LineBreak(),
+            LineBreak(),
+            Button("Add Course", "/add_course"),
+            LineBreak(),
+            LineBreak(),
+            Button("← Back", "/choose_course_input"),
+            classes="container"
+        )
     ])
 
 @route
-def add_course(state: State, course_name: str, credits: str, days: str, time: str) -> Page:
-    """Add a course to the list"""
+def add_course(state: State, course_name: str, credits: str, days: str, time: str, 
+               semester_start: str, semester_end: str) -> Page:
+    """Add a course to the list and update semester dates"""
+    # Update semester dates if provided
+    if semester_start:
+        state.semester_start = semester_start
+    if semester_end:
+        state.semester_end = semester_end
+    
+    # Add course if all fields are filled
     if course_name and days and time:
         state.courses.append(Course(
             name=course_name,
@@ -507,19 +551,24 @@ def show_courses(state: State) -> Page:
     course_list = [f"{c.name} ({c.credits} credits) - {c.days} at {c.time}" for c in state.courses]
     
     return Page(state, [
-        Header("Your Courses", 2),
-        LineBreak(),
-        f"Major: {bold(state.major)}",
-        LineBreak(),
-        LineBreak(),
-        NumberedList(course_list) if course_list else "No courses added yet.",
-        LineBreak(),
-        Button("Add Another Course", manual_course_entry),
-        " ",
-        Button("Next: Add Clubs/Activities", clubs_page) if state.courses else "",
-        LineBreak(),
-        LineBreak(),
-        Button("← Back", choose_course_input)
+        Div(
+            Header("Your Courses", 2),
+            LineBreak(),
+            f"Major: {state.major}",
+            LineBreak(),
+            f"Semester: {state.semester_start} to {state.semester_end}",
+            LineBreak(),
+            LineBreak(),
+            NumberedList(course_list) if course_list else "No courses added yet.",
+            LineBreak(),
+            Button("Add Another Course", "/manual_course_entry"),
+            " ",
+            Button("Next: Add Clubs/Activities", "/clubs_page") if state.courses else "",
+            LineBreak(),
+            LineBreak(),
+            Button("← Back", "/choose_course_input"),
+            classes="container"
+        )
     ])
 
 @route
@@ -578,10 +627,10 @@ def add_club(state: State, club_name: str, club_day: str, club_time: str) -> Pag
 
 @route
 def generate_schedule(state: State) -> Page:
-    """Generate AI study schedule using Gemini"""
+    """Generate AI study schedule using Gemini with pipe-delimited text output"""
     state.current_step = "generate"
     
-    # Prepare prompt for Gemini
+    # Prepare course and club information
     course_info = "\n".join([
         f"- {c.name} ({c.credits} credits, {c.days} at {c.time})"
         for c in state.courses
@@ -592,7 +641,11 @@ def generate_schedule(state: State) -> Page:
         for c in state.clubs
     ]) if state.clubs else "No clubs/activities"
     
-    prompt = f"""You are a study scheduling assistant. A student majoring in {state.major} needs help creating a study schedule for the next couple of weeks.
+    # GEMINI CALL: Generate structured schedule in simple pipe-delimited format
+    schedule_prompt = f"""You are a study scheduling assistant. Create a study schedule for a {state.major} student.
+
+SEMESTER: {state.semester_start} to {state.semester_end}
+Create a comprehensive study schedule for the ENTIRE SEMESTER.
 
 Their courses:
 {course_info}
@@ -600,74 +653,361 @@ Their courses:
 Their clubs/activities:
 {club_info}
 
-IMPORTANT CONSTRAINTS:
-- DO NOT schedule any study sessions between 11:00 PM and 6:00 AM (students need sleep!)
-- Only schedule study sessions between 6:00 AM and 11:00 PM
-- Avoid scheduling during their class times and club activities
-- Consider meal times (breakfast, lunch, dinner)
+CONSTRAINTS:
+- NO scheduling between 11:00 PM and 6:00 AM (sleep time)
+- Avoid class times: {', '.join([f"{c.days} {c.time}" for c in state.courses])}
+- Avoid club times: {club_info}
+- Create 1-3 hour study blocks
+- Prioritize courses based on major ({state.major}) and credit hours
+- Schedule throughout the ENTIRE semester from {state.semester_start} to {state.semester_end}
 
-Please create:
-1. A detailed weekly study schedule for the next 2 weeks with specific day/time blocks for each course
-   - Include date, day of week, time range, and subject
-   - Suggest 1-3 hour study blocks
-   - Prioritize courses based on their major ({state.major}) and credit hours
-   - Balance the workload across the week
-   
-2. Subject-specific study tips for each course
-   - Tailor recommendations to the course subject
-   - Suggest study techniques appropriate for that field
+OUTPUT FORMAT - Return each study session on a new line in this EXACT format:
+DATE|START_TIME|END_TIME|COURSE_CODE|DESCRIPTION
 
-Format your response in two clear sections:
+Example:
+2025-12-09|19:00|21:00|CISC210080|Review assembly language programming
+2025-12-10|14:00|16:00|MATH342010|Practice linear algebra problems
+2025-12-11|08:00|10:00|CPEG202080|Study logic gates and circuits
 
-STUDY SCHEDULE:
-Week 1:
-[specific dates, days, times and subjects - remember no scheduling between 11pm-6am]
+RULES:
+- Use 24-hour time format (e.g., 19:00 not 7:00 PM)
+- Date format: YYYY-MM-DD
+- Create 50-80 study sessions spread across the ENTIRE semester ({state.semester_start} to {state.semester_end})
+- Vary times: morning (08:00-11:00), afternoon (13:00-17:00), evening (18:00-22:00)
+- Each line must have exactly 5 fields separated by | (pipe character)
+- Distribute sessions evenly throughout the semester
+- Increase frequency closer to typical exam periods (midterms around week 8, finals in last 2 weeks)
 
-Week 2:
-[specific dates, days, times and subjects - remember no scheduling between 11pm-6am]
+START OUTPUT (no extra text before or after):"""
 
-STUDY TIPS:
-[tips for each specific course]"""
-    
-    conversation = [LLMMessage("user", prompt)]
-    
     try:
-        response = call_gemini(conversation)
+        # Call Gemini for schedule
+        print("=" * 80)
+        print("Calling Gemini for schedule generation...")
+        print("=" * 80)
+        schedule_response = call_gemini([LLMMessage("user", schedule_prompt)])
         
-        # Check if response is an error
-        if isinstance(response, LLMError):
-            state.study_schedule = f"Error: {response.message}"
-            state.tips = "The AI service encountered an issue. Please make sure the Gemini proxy server is accessible and try again."
+        if isinstance(schedule_response, LLMError):
+            state.study_events = []
+            state.tips = f"❌ Gemini Error: {schedule_response.message}\n\nPlease try again."
+            print(f"Gemini error: {schedule_response.message}")
         else:
-            # Response is LLMResponse, extract content
-            full_response = response.content
+            response_text = schedule_response.content.strip()
+            print(f"Gemini response ({len(response_text)} chars):")
+            print(response_text[:500])
+            print("=" * 80)
             
-            # Try to split into schedule and tips
-            if "STUDY TIPS:" in full_response:
-                parts = full_response.split("STUDY TIPS:")
-                state.study_schedule = parts[0].replace("STUDY SCHEDULE:", "").strip()
-                state.tips = parts[1].strip()
+            # Parse the pipe-delimited format
+            state.study_events = []
+            lines = response_text.strip().split('\n')
+            
+            for line in lines:
+                line = line.strip()
+                if not line or '|' not in line:
+                    continue
+                
+                # Split by pipe character
+                parts = [p.strip() for p in line.split('|')]
+                
+                # Must have exactly 5 parts
+                if len(parts) != 5:
+                    print(f"Skipping invalid line (expected 5 parts, got {len(parts)}): {line}")
+                    continue
+                
+                date_str, start_time, end_time, course_code, description = parts
+                
+                # Validate date format (YYYY-MM-DD)
+                if len(date_str) != 10 or date_str.count('-') != 2:
+                    print(f"Skipping invalid date: {date_str}")
+                    continue
+                
+                # Validate time format (HH:MM)
+                if len(start_time) < 4 or len(end_time) < 4 or ':' not in start_time or ':' not in end_time:
+                    print(f"Skipping invalid time: {start_time} - {end_time}")
+                    continue
+                
+                # Ensure HH:MM format (pad if needed)
+                if len(start_time) == 4:  # H:MM format
+                    start_time = '0' + start_time
+                if len(end_time) == 4:  # H:MM format
+                    end_time = '0' + end_time
+                
+                # Construct ISO datetime strings
+                start_datetime = f"{date_str}T{start_time}:00"
+                end_datetime = f"{date_str}T{end_time}:00"
+                
+                # Create event
+                event = StudyEvent(
+                    title=f"Study {course_code}",
+                    start_datetime=start_datetime,
+                    end_datetime=end_datetime,
+                    course_code=course_code,
+                    description=description
+                )
+                state.study_events.append(event)
+                print(f"✓ Added event: {event.title} on {date_str} {start_time}-{end_time}")
+            
+            print(f"\n✅ Successfully parsed {len(state.study_events)} events")
+            
+            if len(state.study_events) == 0:
+                state.tips = "❌ No events generated. Please try again."
+                print("WARNING: No valid events parsed from response")
+        
+        # SECOND GEMINI CALL: Generate study tips
+        if state.study_events:  # Only generate tips if schedule was successful
+            print("\nGenerating study tips...")
+            tips_prompt = f"""Based on these courses for a {state.major} major:
+
+{course_info}
+
+Provide 5 concise, actionable study tips tailored to these specific subjects. Format as a numbered list.
+Focus on:
+- Effective study techniques for each subject area
+- Time management strategies
+- Resource recommendations
+- Test preparation advice"""
+        
+            tips_response = call_gemini([LLMMessage("user", tips_prompt)])
+            
+            if isinstance(tips_response, LLMError):
+                state.tips = "📚 Study your course materials regularly and stay organized!"
             else:
-                state.study_schedule = full_response
-                state.tips = "Check your schedule above for details!"
+                state.tips = tips_response.content.strip()
+                print("Study tips generated successfully")
+        else:
+            state.tips = "❌ No events generated. Please try again."
+            print("Skipping tips generation - no events created")
             
     except Exception as e:
-        state.study_schedule = f"Error generating schedule: {str(e)}"
-        state.tips = "Please try again or check your internet connection."
+        state.study_events = []
+        state.tips = f"❌ Unexpected Error: {str(e)}\n\nPlease try again or check your internet connection."
+        print(f"Exception in generate_schedule: {e}")
+        import traceback
+        traceback.print_exc()
     
     return show_results(state)
 
 @route
 def show_results(state: State) -> Page:
-    """Display the AI-generated study schedule and tips"""
+    """Display the AI-generated study schedule with interactive calendar including actual classes"""
+    
+    import json
+    from datetime import datetime, timedelta
+    
+    # Helper function to convert day abbreviations to weekday numbers
+    def parse_days(days_str):
+        """Convert 'MW', 'TuTh', etc. to list of weekday numbers (0=Monday, 6=Sunday)"""
+        day_map = {
+            'M': 0, 'Tu': 1, 'W': 2, 'Th': 3, 'F': 4, 'Sa': 5, 'Su': 6
+        }
+        days = []
+        i = 0
+        while i < len(days_str):
+            if i + 1 < len(days_str) and days_str[i:i+2] in day_map:
+                days.append(day_map[days_str[i:i+2]])
+                i += 2
+            elif days_str[i] in day_map:
+                days.append(day_map[days_str[i]])
+                i += 1
+            else:
+                i += 1
+        return days
+    
+    # Helper function to parse time strings like "9:00 AM - 10:00 AM"
+    def parse_time_range(time_str):
+        """Parse time string and return (start_hour, start_min, end_hour, end_min)"""
+        try:
+            parts = time_str.replace(' ', '').split('-')
+            if len(parts) != 2:
+                return None
+            
+            start_str, end_str = parts
+            
+            # Parse start time
+            if 'AM' in start_str or 'PM' in start_str:
+                start_time = datetime.strptime(start_str, '%I:%M%p')
+            else:
+                start_time = datetime.strptime(start_str, '%H:%M')
+            
+            # Parse end time
+            if 'AM' in end_str or 'PM' in end_str:
+                end_time = datetime.strptime(end_str, '%I:%M%p')
+            else:
+                end_time = datetime.strptime(end_str, '%H:%M')
+            
+            return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
+        except:
+            return None
+    
+    # Generate recurring class events for entire semester
+    class_events = []
+    if state.courses and state.semester_start and state.semester_end:
+        try:
+            semester_start = datetime.strptime(state.semester_start, '%Y-%m-%d')
+            semester_end = datetime.strptime(state.semester_end, '%Y-%m-%d')
+            
+            for course in state.courses:
+                weekdays = parse_days(course.days)
+                time_parts = parse_time_range(course.time)
+                
+                if not weekdays or not time_parts:
+                    continue
+                
+                start_hour, start_min, end_hour, end_min = time_parts
+                
+                # Generate events for each occurrence of the class
+                current_date = semester_start
+                while current_date <= semester_end:
+                    if current_date.weekday() in weekdays:
+                        class_start = current_date.replace(hour=start_hour, minute=start_min, second=0)
+                        class_end = current_date.replace(hour=end_hour, minute=end_min, second=0)
+                        
+                        class_events.append({
+                            "title": f"📚 {course.name}",
+                            "start": class_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "end": class_end.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "description": f"{course.name} - {course.credits} credits",
+                            "backgroundColor": "#e74c3c",  # Red for classes
+                            "borderColor": "#c0392b",
+                            "extendedProps": {
+                                "type": "class",
+                                "course": course.name,
+                                "description": f"Class: {course.name}"
+                            }
+                        })
+                    
+                    current_date += timedelta(days=1)
+        except Exception as e:
+            print(f"Error generating class events: {e}")
+    
+    # Convert StudyEvent objects to JSON for JavaScript (study sessions)
+    study_events = [
+        {
+            "title": event.title,
+            "start": event.start_datetime,
+            "end": event.end_datetime,
+            "description": event.description,
+            "backgroundColor": "#667eea",  # Purple for study sessions
+            "borderColor": "#764ba2",
+            "extendedProps": {
+                "type": "study",
+                "course": event.course_code,
+                "description": event.description
+            }
+        }
+        for event in state.study_events
+    ]
+    
+    # Combine all events
+    all_events_json = json.dumps(study_events + class_events)
+    
+    # JavaScript for FullCalendar with filters
+    calendar_js = f"""
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {{
+        var calendarEl = document.getElementById('calendar');
+        if (!calendarEl) {{
+            console.error('Calendar element not found!');
+            return;
+        }}
+        
+        // All events from Python (study sessions + class meetings)
+        var allEvents = {all_events_json};
+        console.log('Loaded', allEvents.length, 'total events');
+        
+        var calendar = new FullCalendar.Calendar(calendarEl, {{
+            initialView: 'timeGridWeek',
+            initialDate: '{state.semester_start}',
+            headerToolbar: {{
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+            }},
+            slotMinTime: '06:00:00',
+            slotMaxTime: '23:00:00',
+            allDaySlot: false,
+            height: 'auto',
+            events: allEvents,
+            eventClick: function(info) {{
+                var eventType = info.event.extendedProps.type === 'class' ? '📚 Class' : '✏️ Study Session';
+                var eventDetails = 
+                    eventType + '\\n\\n' +
+                    '� ' + info.event.title + '\\n\\n' +
+                    '🕒 ' + info.event.start.toLocaleString('en-US', {{ 
+                        weekday: 'long', 
+                        month: 'long', 
+                        day: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                    }}) + '\\n' +
+                    '   to ' + info.event.end.toLocaleTimeString('en-US', {{ 
+                        hour: 'numeric',
+                        minute: '2-digit'
+                    }}) + '\\n\\n';
+                
+                if (info.event.extendedProps.description) {{
+                    eventDetails += '📝 ' + info.event.extendedProps.description;
+                }}
+                
+                alert(eventDetails);
+            }},
+            eventDidMount: function(info) {{
+                // Add tooltip on hover
+                info.el.title = info.event.title + '\\n' + 
+                    info.event.start.toLocaleTimeString() + ' - ' + 
+                    info.event.end.toLocaleTimeString();
+            }}
+        }});
+        
+        calendar.render();
+        console.log('Calendar rendered successfully!');
+        
+        // Filter functionality
+        var showStudy = true;
+        var showClasses = true;
+        
+        function updateCalendar() {{
+            var filteredEvents = allEvents.filter(function(event) {{
+                if (event.extendedProps.type === 'study' && !showStudy) return false;
+                if (event.extendedProps.type === 'class' && !showClasses) return false;
+                return true;
+            }});
+            calendar.removeAllEvents();
+            calendar.addEventSource(filteredEvents);
+            
+            // Update count
+            document.getElementById('event-count').textContent = 
+                'Showing ' + filteredEvents.length + ' events (' + 
+                ({len(state.study_events)} + ' study sessions, ' + {len(class_events)} + ' class meetings)';
+        }}
+        
+        document.getElementById('filter-study').addEventListener('change', function(e) {{
+            showStudy = e.target.checked;
+            updateCalendar();
+        }});
+        
+        document.getElementById('filter-classes').addEventListener('change', function(e) {{
+            showClasses = e.target.checked;
+            updateCalendar();
+        }});
+    }});
+    </script>
+    """
+    
     return Page(state, [
         Div(
+            calendar_js,
             change_text_align(Header("Your Personalized Study Schedule 📚", 1), "center"),
             LineBreak(),
             change_text_align(
                 Div(
-                    "Major: ",
-                    change_color(bold(state.major), "#764ba2"),
+                    f"Major: {state.major}",
+                    LineBreak(),
+                    f"Semester: {state.semester_start} to {state.semester_end}",
+                    LineBreak(),
+                    f"Total Events: {len(state.study_events) + len(class_events)} ({len(state.study_events)} study sessions + {len(class_events)} classes)",
                     classes="info-box"
                 ),
                 "center"
@@ -675,42 +1015,96 @@ def show_results(state: State) -> Page:
             LineBreak(),
             HorizontalRule(),
             LineBreak(),
-            change_color(Header("📅 Study Schedule", 2), "#667eea"),
-            change_background_color(
-                change_padding(PreformattedText(state.study_schedule), "20px"),
-                "#f8f9fa"
-            ),
+            
+            # Filter Sidebar and Calendar Container
+            "<div style='display: flex; gap: 20px;'>",
+            
+            # Sidebar with filters
+            """<div style='min-width: 200px; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); height: fit-content;'>
+                <h3 style='margin-top: 0; color: #667eea;'>📊 Filters</h3>
+                <div style='margin: 15px 0;'>
+                    <label style='display: flex; align-items: center; cursor: pointer; padding: 8px; border-radius: 5px; transition: background 0.2s;' onmouseover='this.style.background="#f8f9fa"' onmouseout='this.style.background="transparent"'>
+                        <input type='checkbox' id='filter-study' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+                        <span style='font-weight: 500;'>✏️ Study Sessions</span>
+                    </label>
+                </div>
+                <div style='margin: 15px 0;'>
+                    <label style='display: flex; align-items: center; cursor: pointer; padding: 8px; border-radius: 5px; transition: background 0.2s;' onmouseover='this.style.background="#f8f9fa"' onmouseout='this.style.background="transparent"'>
+                        <input type='checkbox' id='filter-classes' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+                        <span style='font-weight: 500;'>📚 Classes</span>
+                    </label>
+                </div>
+                <hr style='margin: 20px 0; border: none; border-top: 1px solid #e0e0e0;'>
+                <div style='font-size: 12px; color: #666; line-height: 1.6;'>
+                    <strong>Legend:</strong><br>
+                    <span style='display: inline-block; width: 12px; height: 12px; background: #667eea; border-radius: 2px; margin-right: 5px;'></span> Study Sessions<br>
+                    <span style='display: inline-block; width: 12px; height: 12px; background: #e74c3c; border-radius: 2px; margin-right: 5px;'></span> Classes
+                </div>
+            </div>""",
+            
+            # Calendar View
+            "<div style='flex: 1;'>",
+            change_color(Header("📅 Interactive Schedule Calendar", 2), "#667eea"),
+            "<p id='event-count' style='color: #666;'>Showing " + str(len(state.study_events) + len(class_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " class meetings)</p>",
+            "<div id='calendar' style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 600px;'></div>",
+            "</div>",
+            
+            "</div>",  # Close flex container
+            
+            LineBreak(),
             LineBreak(),
             HorizontalRule(),
             LineBreak(),
+            
+            # Tips Section
             change_color(Header("💡 Study Tips & Recommendations", 2), "#667eea"),
             change_background_color(
                 change_padding(PreformattedText(state.tips), "20px"),
                 "#f8f9fa"
             ),
+            
+            LineBreak(),
+            LineBreak(),
+            
+            # Event List (as backup/reference)
+            "<details style='margin: 20px 0;'>",
+            "<summary style='cursor: pointer; padding: 10px; background: #f8f9fa; border-radius: 8px; font-weight: 600;'>📋 View Complete Schedule List</summary>",
+            "<div style='padding: 20px; background: #f8f9fa;'>",
+            "<h4 style='color: #667eea;'>✏️ Study Sessions</h4>",
+            *[
+                f"<div style='margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #667eea; border-radius: 5px;'>"
+                f"<strong>{event.title}</strong><br>"
+                f"📅 {event.start_datetime[:10]} | 🕒 {event.start_datetime[11:16]} - {event.end_datetime[11:16]}<br>"
+                f"📝 {event.description}</div>"
+                for event in state.study_events
+            ] if state.study_events else ["<p>No study sessions generated.</p>"],
+            "<h4 style='color: #e74c3c; margin-top: 20px;'>📚 Classes</h4>",
+            *[
+                f"<div style='margin: 10px 0; padding: 10px; background: white; border-left: 4px solid #e74c3c; border-radius: 5px;'>"
+                f"<strong>{course.name}</strong><br>"
+                f"📅 {course.days} | 🕒 {course.time}<br>"
+                f"📝 {course.credits} credits</div>"
+                for course in state.courses
+            ] if state.courses else ["<p>No classes added.</p>"],
+            "</div>",
+            "</details>",
+            
             LineBreak(),
             HorizontalRule(),
             LineBreak(),
             Div(
-                Button("🔄 Start Over", index),
+                Button("🔄 Start Over", "/"),
                 " ",
-                Button("✏️ Modify Activities", clubs_page),
+                Button("✏️ Modify Schedule", "/clubs_page"),
                 classes="button-group"
             ),
             LineBreak(),
             change_text_align(
-                change_color(
-                    "💾 Tip: Screenshot this schedule for easy reference!",
-                    "#666"
-                ),
+                Text("💡 Tip: Use the sidebar filters to show/hide study sessions or classes. Click on calendar events to see details!"),
                 "center"
             ),
             classes="container"
         )
     ])
 hide_debug_information()
-# Start the server
-start_server(State())
-
-
 start_server(State())
