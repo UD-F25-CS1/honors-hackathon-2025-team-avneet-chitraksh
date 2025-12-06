@@ -29,10 +29,13 @@ class Course:
 class ClubActivity:
     name: str
     schedule: list[str]
-    duration: str
+    duration: int
 @dataclass
-class Schedule:
-    pass
+class StudySchedule:
+    course: str
+    start_time: str
+    duration: int
+    priority: int
 
 @route
 def index(state: State) -> Page:
