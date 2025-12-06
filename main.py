@@ -19,9 +19,9 @@ set_site_information(
 )
 set_gemini_server("https://draftergeminiproxy.avneet-sehgal72.workers.dev/")
 
-# Modern Custom CSS Styling
+# Modern Custom CSS Styling - Dark/Orange Theme (Claude-inspired)
 add_website_css("""
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
     
     * {
         margin: 0;
@@ -30,11 +30,15 @@ add_website_css("""
     }
     
     body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+        background: #0d0d0d;
+        background-image: 
+            radial-gradient(ellipse at 20% 20%, rgba(255, 138, 0, 0.15) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 80%, rgba(255, 179, 71, 0.1) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 50%, rgba(255, 100, 0, 0.05) 0%, transparent 70%);
         min-height: 100vh;
         padding: 20px;
-        color: #333;
+        color: #e5e5e5;
         line-height: 1.6;
     }
     
@@ -42,11 +46,12 @@ add_website_css("""
     .container {
         max-width: 900px;
         margin: 0 auto;
-        background: white;
+        background: linear-gradient(145deg, #1a1a1a 0%, #141414 100%);
         border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(255, 138, 0, 0.1);
         padding: 40px;
         animation: fadeIn 0.5s ease-in;
+        border: 1px solid rgba(255, 138, 0, 0.2);
     }
     
     @keyframes fadeIn {
@@ -56,28 +61,28 @@ add_website_css("""
     
     /* Headers */
     h1 {
-        color: #667eea;
         font-size: 2.5em;
         font-weight: 700;
         margin-bottom: 10px;
         text-align: center;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #ff8a00 0%, #ffb347 50%, #ff6b00 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        text-shadow: 0 0 30px rgba(255, 138, 0, 0.3);
     }
     
     h2 {
-        color: #764ba2;
+        color: #ff8a00;
         font-size: 1.8em;
         font-weight: 600;
         margin: 25px 0 15px 0;
         padding-bottom: 10px;
-        border-bottom: 3px solid #667eea;
+        border-bottom: 2px solid rgba(255, 138, 0, 0.3);
     }
     
     h3 {
-        color: #555;
+        color: #ffb347;
         font-size: 1.3em;
         font-weight: 600;
         margin: 20px 0 10px 0;
@@ -85,8 +90,8 @@ add_website_css("""
     
     /* Buttons */
     button, .button {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
+        color: #0d0d0d;
         border: none;
         padding: 12px 30px;
         font-size: 16px;
@@ -95,13 +100,14 @@ add_website_css("""
         cursor: pointer;
         transition: all 0.3s ease;
         margin: 5px;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-        font-family: 'Inter', sans-serif;
+        box-shadow: 0 4px 15px rgba(255, 138, 0, 0.3), 0 0 20px rgba(255, 138, 0, 0.1);
+        font-family: 'Space Grotesk', sans-serif;
     }
     
     button:hover, .button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 6px 25px rgba(255, 138, 0, 0.5), 0 0 30px rgba(255, 138, 0, 0.2);
+        background: linear-gradient(135deg, #ffb347 0%, #ff8a00 100%);
     }
     
     button:active {
@@ -113,29 +119,35 @@ add_website_css("""
         width: 100%;
         padding: 12px 15px;
         margin: 8px 0;
-        border: 2px solid #e0e0e0;
+        border: 2px solid #333;
         border-radius: 10px;
         font-size: 16px;
-        font-family: 'Inter', sans-serif;
+        font-family: 'Space Grotesk', sans-serif;
         transition: all 0.3s ease;
-        background: #f8f9fa;
+        background: #1a1a1a;
+        color: #e5e5e5;
     }
     
     input[type="text"]:focus, textarea:focus, select:focus {
         outline: none;
-        border-color: #667eea;
-        background: white;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        border-color: #ff8a00;
+        background: #222;
+        box-shadow: 0 0 0 3px rgba(255, 138, 0, 0.15), 0 0 20px rgba(255, 138, 0, 0.1);
     }
     
     select {
         cursor: pointer;
         appearance: none;
-        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff8a00' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
         background-repeat: no-repeat;
         background-position: right 10px center;
         background-size: 20px;
         padding-right: 40px;
+    }
+    
+    select option {
+        background: #1a1a1a;
+        color: #e5e5e5;
     }
     
     /* Lists */
@@ -147,104 +159,109 @@ add_website_css("""
     li {
         margin: 10px 0;
         padding: 12px;
-        background: #f8f9fa;
+        background: #1f1f1f;
         border-radius: 8px;
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #ff8a00;
         transition: all 0.2s ease;
+        color: #e5e5e5;
     }
     
     li:hover {
-        background: #e8eaf6;
+        background: #2a2a2a;
         transform: translateX(5px);
+        border-left-color: #ffb347;
     }
     
     /* Cards */
     .card {
-        background: #f8f9fa;
+        background: #1f1f1f;
         padding: 20px;
         border-radius: 12px;
         margin: 15px 0;
-        border: 2px solid #e0e0e0;
+        border: 1px solid #333;
         transition: all 0.3s ease;
     }
     
     .card:hover {
-        border-color: #667eea;
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        border-color: #ff8a00;
+        box-shadow: 0 4px 20px rgba(255, 138, 0, 0.15);
     }
     
     /* Horizontal rules */
     hr {
         border: none;
         height: 2px;
-        background: linear-gradient(90deg, transparent, #667eea, transparent);
+        background: linear-gradient(90deg, transparent, #ff8a00, transparent);
         margin: 30px 0;
     }
     
     /* Pre-formatted text (for schedule display) */
     pre {
-        background: #f8f9fa;
+        background: #1a1a1a;
         padding: 20px;
         border-radius: 12px;
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #ff8a00;
         overflow-x: auto;
-        font-family: 'Courier New', monospace;
+        font-family: 'SF Mono', 'Fira Code', monospace;
         font-size: 14px;
         line-height: 1.6;
         white-space: pre-wrap;
         word-wrap: break-word;
+        color: #e5e5e5;
     }
     
     /* Bold and italic text */
     strong, b {
-        color: #764ba2;
+        color: #ffb347;
         font-weight: 600;
     }
     
     em, i {
-        color: #666;
+        color: #999;
         font-style: italic;
     }
     
     /* Links */
     a {
-        color: #667eea;
+        color: #ff8a00;
         text-decoration: none;
         font-weight: 500;
         transition: all 0.2s ease;
     }
     
     a:hover {
-        color: #764ba2;
+        color: #ffb347;
         text-decoration: underline;
+        text-shadow: 0 0 10px rgba(255, 138, 0, 0.3);
     }
     
     /* Step indicator */
     .step-indicator {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+        background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
+        color: #0d0d0d;
         padding: 8px 20px;
         border-radius: 20px;
         display: inline-block;
         font-size: 14px;
         font-weight: 600;
         margin-bottom: 20px;
+        box-shadow: 0 0 20px rgba(255, 138, 0, 0.2);
     }
     
     /* Info box */
     .info-box {
-        background: #e8eaf6;
+        background: rgba(255, 138, 0, 0.1);
         padding: 15px 20px;
         border-radius: 10px;
-        border-left: 4px solid #667eea;
+        border-left: 4px solid #ff8a00;
         margin: 15px 0;
-        color: #555;
+        color: #e5e5e5;
     }
     
     /* Success message */
     .success {
-        background: #d4edda;
-        color: #155724;
+        background: rgba(40, 167, 69, 0.15);
+        color: #5cb85c;
         padding: 15px 20px;
         border-radius: 10px;
         border-left: 4px solid #28a745;
@@ -281,32 +298,65 @@ add_website_css("""
     .day-tile {
         display: inline-block;
         padding: 12px 18px;
-        background: white;
-        border: 2px solid #e0e0e0;
+        background: #1a1a1a;
+        border: 2px solid #333;
         border-radius: 8px;
         font-weight: 600;
-        color: #666;
+        color: #999;
         transition: all 0.2s ease;
         min-width: 50px;
         text-align: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         cursor: pointer;
     }
     
     .day-tile:hover {
-        border-color: #667eea;
-        background: #f8f9ff;
+        border-color: #ff8a00;
+        background: #222;
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(102,126,234,0.2);
+        box-shadow: 0 4px 15px rgba(255,138,0,0.2);
+        color: #ffb347;
     }
     
     .day-tile.selected {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        border-color: #667eea;
-        color: white;
-        box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+        background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%) !important;
+        border-color: #ff8a00;
+        color: #0d0d0d;
+        box-shadow: 0 4px 20px rgba(255,138,0,0.4);
     }
     
+    /* Checkboxes */
+    input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        accent-color: #ff8a00;
+        cursor: pointer;
+    }
+    
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    ::-webkit-scrollbar-track {
+        background: #1a1a1a;
+    }
+    
+    ::-webkit-scrollbar-thumb {
+        background: #ff8a00;
+        border-radius: 4px;
+    }
+    
+    ::-webkit-scrollbar-thumb:hover {
+        background: #ffb347;
+    }
+    
+    /* Paragraph text */
+    p {
+        color: #c5c5c5;
+    }
+
     @media (max-width: 768px) {
         .container {
             padding: 20px;
@@ -376,49 +426,181 @@ class State:
     
 # Helper function to parse CSV
 def parse_course_csv(csv_content: str) -> tuple[list[Course], list[str]]:
-    """Parse CSV content and return list of courses and errors"""
+    """Parse CSV content and return list of courses and errors.
+    Supports two formats:
+    1. Simple format: Course Name, Credits, Days, Time
+    2. WebReg/Calendar format: Subject, Start Date, Start Time, End Date, End Time, All Day Event, Location
+    """
+    from datetime import datetime
+    
     courses = []
     errors = []
     lines = csv_content.strip().split('\n')
     
-    # Skip header if present
-    start_idx = 1 if lines and ('course' in lines[0].lower() or 'name' in lines[0].lower()) else 0
+    if not lines:
+        return courses, ["Empty CSV file"]
     
-    for idx, line in enumerate(lines[start_idx:], start=start_idx+1):
-        if line.strip():
+    # Detect format based on header
+    header = lines[0].lower()
+    
+    # Check if it's WebReg/Calendar format
+    if 'start date' in header or 'start time' in header or 'end time' in header:
+        # WebReg/Calendar format: Subject, Start Date, Start Time, End Date, End Time, All Day Event, Location
+        # We need to group events by course name and determine the days/times
+        
+        course_data = {}  # {course_name: {'dates': [...], 'start_time': str, 'end_time': str}}
+        
+        for idx, line in enumerate(lines[1:], start=2):  # Skip header
+            if not line.strip():
+                continue
+                
             parts = [p.strip() for p in line.split(',')]
-            if len(parts) >= 4:
-                name, credits, days, time = parts[0], parts[1], parts[2], parts[3]
-                valid = True
+            if len(parts) < 5:
+                errors.append(f"Row {idx}: Not enough columns for calendar format.")
+                continue
+            
+            course_name = parts[0]
+            start_date_str = parts[1]  # MM/DD/YYYY
+            start_time_str = parts[2]  # HH:MM AM/PM
+            end_date_str = parts[3]    # MM/DD/YYYY
+            end_time_str = parts[4]    # HH:MM AM/PM
+            
+            if not course_name or not start_date_str or not start_time_str:
+                errors.append(f"Row {idx}: Missing required fields.")
+                continue
+            
+            # Parse the date to get day of week
+            try:
+                event_date = datetime.strptime(start_date_str, '%m/%d/%Y')
+                day_of_week = event_date.weekday()  # 0=Monday, 6=Sunday
                 
-                # Validate required fields
-                if not name or not days or not time:
-                    errors.append(f"Row {idx}: Missing required fields (name, days, or time).")
-                    valid = False
+                # Map day number to abbreviation
+                day_abbrevs = {0: 'M', 1: 'Tu', 2: 'W', 3: 'Th', 4: 'F', 5: 'Sa', 6: 'Su'}
+                day_abbrev = day_abbrevs[day_of_week]
                 
-                # Validate credits
-                try:
-                    int_credits = int(credits) if credits.isdigit() else 3
-                except:
-                    errors.append(f"Row {idx}: Invalid credits value '{credits}' (must be a number).")
-                    valid = False
-                
-                # Validate time format
-                if valid and '-' not in time:
-                    errors.append(f"Row {idx}: Invalid time format '{time}' (expected format: 'HH:MM AM/PM - HH:MM AM/PM').")
-                    valid = False
-                
-                if valid:
-                    courses.append(Course(
-                        name=name,
-                        credits=int_credits,
-                        days=days,
-                        time=time
-                    ))
-            else:
-                errors.append(f"Row {idx}: Not enough columns (expected at least 4: Name, Credits, Days, Time).")
+            except ValueError as e:
+                errors.append(f"Row {idx}: Invalid date format '{start_date_str}'.")
+                continue
+            
+            # Store course data
+            if course_name not in course_data:
+                course_data[course_name] = {
+                    'days': set(),
+                    'start_time': start_time_str,
+                    'end_time': end_time_str,
+                    'first_date': event_date,
+                    'last_date': event_date
+                }
+            
+            course_data[course_name]['days'].add(day_abbrev)
+            if event_date < course_data[course_name]['first_date']:
+                course_data[course_name]['first_date'] = event_date
+            if event_date > course_data[course_name]['last_date']:
+                course_data[course_name]['last_date'] = event_date
+        
+        # Convert course_data to Course objects
+        for course_name, data in course_data.items():
+            # Sort days in proper order
+            day_order = {'M': 0, 'Tu': 1, 'W': 2, 'Th': 3, 'F': 4, 'Sa': 5, 'Su': 6}
+            sorted_days = sorted(data['days'], key=lambda d: day_order.get(d, 7))
+            days_str = ''.join(sorted_days)
+            
+            # Create time range string
+            time_str = f"{data['start_time']} - {data['end_time']}"
+            
+            # Estimate credits based on meeting frequency (rough estimate)
+            credits = 3  # Default
+            if len(data['days']) >= 3:
+                credits = 3
+            elif len(data['days']) == 2:
+                credits = 3
+            elif len(data['days']) == 1:
+                credits = 1
+            
+            courses.append(Course(
+                name=course_name,
+                credits=credits,
+                days=days_str,
+                time=time_str
+            ))
+        
+        # Return the first and last dates for semester bounds
+        if course_data:
+            all_first = min(d['first_date'] for d in course_data.values())
+            all_last = max(d['last_date'] for d in course_data.values())
+            # Store in a special way - we'll handle this in the route
+            
+    else:
+        # Simple format: Course Name, Credits, Days, Time
+        start_idx = 1 if lines and ('course' in header or 'name' in header) else 0
+        
+        for idx, line in enumerate(lines[start_idx:], start=start_idx+1):
+            if line.strip():
+                parts = [p.strip() for p in line.split(',')]
+                if len(parts) >= 4:
+                    name, credits, days, time = parts[0], parts[1], parts[2], parts[3]
+                    valid = True
+                    
+                    # Validate required fields
+                    if not name or not days or not time:
+                        errors.append(f"Row {idx}: Missing required fields (name, days, or time).")
+                        valid = False
+                    
+                    # Validate credits
+                    try:
+                        int_credits = int(credits) if credits.isdigit() else 3
+                    except:
+                        errors.append(f"Row {idx}: Invalid credits value '{credits}' (must be a number).")
+                        valid = False
+                    
+                    # Validate time format
+                    if valid and '-' not in time:
+                        errors.append(f"Row {idx}: Invalid time format '{time}' (expected format: 'HH:MM AM/PM - HH:MM AM/PM').")
+                        valid = False
+                    
+                    if valid:
+                        courses.append(Course(
+                            name=name,
+                            credits=int_credits,
+                            days=days,
+                            time=time
+                        ))
+                else:
+                    errors.append(f"Row {idx}: Not enough columns (expected at least 4: Name, Credits, Days, Time).")
     
     return courses, errors
+
+
+def get_semester_dates_from_csv(csv_content: str) -> tuple[str, str]:
+    """Extract semester start and end dates from WebReg CSV format."""
+    from datetime import datetime
+    
+    lines = csv_content.strip().split('\n')
+    if not lines:
+        return "", ""
+    
+    header = lines[0].lower()
+    if 'start date' not in header:
+        return "", ""
+    
+    dates = []
+    for line in lines[1:]:
+        if not line.strip():
+            continue
+        parts = [p.strip() for p in line.split(',')]
+        if len(parts) >= 2:
+            try:
+                event_date = datetime.strptime(parts[1], '%m/%d/%Y')
+                dates.append(event_date)
+            except:
+                continue
+    
+    if dates:
+        start_date = min(dates).strftime('%Y-%m-%d')
+        end_date = max(dates).strftime('%Y-%m-%d')
+        return start_date, end_date
+    
+    return "", ""
 
 # Routes
 @route
@@ -520,6 +702,14 @@ def parse_csv(state: State, csv_file: str) -> Page:
     """Parse uploaded CSV and display courses"""
     try:
         state.courses, errors = parse_course_csv(csv_file)
+        
+        # Try to extract semester dates from WebReg format
+        start_date, end_date = get_semester_dates_from_csv(csv_file)
+        if start_date and end_date:
+            state.semester_start = start_date
+            state.semester_end = end_date
+            print(f"✅ Detected semester dates: {start_date} to {end_date}")
+        
         print(f"✅ Parsed {len(state.courses)} courses from CSV")
         for course in state.courses[:5]:  # Print first 5
             print(f"  - {course.name}: {course.days} at {course.time}")
@@ -552,9 +742,11 @@ def parse_csv(state: State, csv_file: str) -> Page:
             f"There was an error parsing your CSV: {str(e)}",
             LineBreak(),
             LineBreak(),
-            "Please make sure your CSV follows this format:",
+            "Please make sure your CSV follows one of these formats:",
             LineBreak(),
-            italic("Course Name, Credits, Days, Time"),
+            "1. Simple format: Course Name, Credits, Days, Time",
+            LineBreak(),
+            "2. WebReg format: Subject, Start Date, Start Time, End Date, End Time, All Day Event, Location",
             LineBreak(),
             LineBreak(),
             Button("← Try Again", upload_csv_page)
@@ -605,31 +797,31 @@ def manual_course_entry(state: State) -> Page:
             """<div style='display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;'>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_monday' value='M' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>M</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>M</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_tuesday' value='Tu' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Tu</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>Tu</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_wednesday' value='W' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>W</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>W</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_thursday' value='Th' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Th</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>Th</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_friday' value='F' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>F</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>F</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_saturday' value='Sa' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Sa</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>Sa</span>
                 </label>
                 <label style='cursor: pointer;' onclick="toggleDay(this);">
                     <input type='checkbox' name='day_sunday' value='Su' style='display: none;'>
-                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; font-weight: 600; color: #666; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05); cursor: pointer;'>Su</span>
+                    <span class='day-tile' style='display: inline-block; padding: 12px 18px; background: #1a1a1a; border: 2px solid #333; border-radius: 8px; font-weight: 600; color: #999; transition: all 0.2s ease; min-width: 50px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.3); cursor: pointer;'>Su</span>
                 </label>
             </div>
             <script>
@@ -639,15 +831,15 @@ def manual_course_entry(state: State) -> Page:
                     checkbox.checked = !checkbox.checked;
                     
                     if (checkbox.checked) {
-                        tile.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                        tile.style.borderColor = '#667eea';
-                        tile.style.color = 'white';
-                        tile.style.boxShadow = '0 4px 12px rgba(102,126,234,0.4)';
+                        tile.style.background = 'linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%)';
+                        tile.style.borderColor = '#ff8a00';
+                        tile.style.color = '#0d0d0d';
+                        tile.style.boxShadow = '0 4px 20px rgba(255,138,0,0.4)';
                     } else {
-                        tile.style.background = 'white';
-                        tile.style.borderColor = '#e0e0e0';
-                        tile.style.color = '#666';
-                        tile.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                        tile.style.background = '#1a1a1a';
+                        tile.style.borderColor = '#333';
+                        tile.style.color = '#999';
+                        tile.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
                     }
                 }
                 
@@ -656,10 +848,10 @@ def manual_course_entry(state: State) -> Page:
                     document.querySelectorAll('input[type="checkbox"][name^="day_"]').forEach(checkbox => {
                         const tile = checkbox.parentElement.querySelector('.day-tile');
                         if (checkbox.checked && tile) {
-                            tile.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-                            tile.style.borderColor = '#667eea';
-                            tile.style.color = 'white';
-                            tile.style.boxShadow = '0 4px 12px rgba(102,126,234,0.4)';
+                            tile.style.background = 'linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%)';
+                            tile.style.borderColor = '#ff8a00';
+                            tile.style.color = '#0d0d0d';
+                            tile.style.boxShadow = '0 4px 20px rgba(255,138,0,0.4)';
                         }
                     });
                 });
@@ -767,18 +959,44 @@ def show_courses(state: State) -> Page:
     
     def parse_time_range(time_str):
         try:
-            parts = time_str.replace(' ', '').split('-')
+            # Split by ' - ' first (with spaces), then try just '-'
+            if ' - ' in time_str:
+                parts = time_str.split(' - ')
+            elif '-' in time_str:
+                parts = time_str.split('-')
+            else:
+                return None
+            
             if len(parts) != 2:
                 return None
-            start_str, end_str = parts
-            if 'AM' in start_str or 'PM' in start_str:
-                start_time = datetime.strptime(start_str, '%I:%M%p')
-            else:
-                start_time = datetime.strptime(start_str, '%H:%M')
-            if 'AM' in end_str or 'PM' in end_str:
-                end_time = datetime.strptime(end_str, '%I:%M%p')
-            else:
-                end_time = datetime.strptime(end_str, '%H:%M')
+            
+            start_str = parts[0].strip()
+            end_str = parts[1].strip()
+            
+            # Parse start time - try multiple formats
+            start_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    start_time = datetime.strptime(start_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if start_time is None:
+                return None
+            
+            # Parse end time - try multiple formats
+            end_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    end_time = datetime.strptime(end_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if end_time is None:
+                return None
+            
             return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
         except:
             return None
@@ -879,11 +1097,11 @@ def show_courses(state: State) -> Page:
             LineBreak(),
             
             # Calendar Preview - Always show if courses exist
-            ("<div style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px 0;'>" +
-             "<h3 style='color: #667eea; margin-top: 0;'>📅 Your Class Schedule</h3>" +
-             "<p style='color: #666;'>Showing your classes for the entire semester</p>" +
+            ("<div style='background: #1a1a1a; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 30px rgba(255,138,0,0.1); margin: 20px 0; border: 1px solid rgba(255,138,0,0.2);'>" +
+             "<h3 style='color: #ff8a00; margin-top: 0;'>📅 Your Class Schedule</h3>" +
+             "<p style='color: #999;'>Showing your classes for the entire semester</p>" +
              "<div id='preview-calendar' style='min-height: 500px;'></div>" +
-             "</div>") if state.courses else "<p>No courses added yet.</p>",
+             "</div>") if state.courses else "<p style='color: #999;'>No courses added yet.</p>",
             
             LineBreak(),
             Button("Add Another Course", "/manual_course_entry"),
@@ -950,27 +1168,27 @@ def clubs_page(state: State) -> Page:
             .day-tile-club {
                 display: inline-block;
                 padding: 12px 18px;
-                background: white;
-                border: 2px solid #e0e0e0;
+                background: #1a1a1a;
+                border: 2px solid #333;
                 border-radius: 8px;
                 font-weight: 600;
-                color: #666;
+                color: #999;
                 transition: all 0.2s ease;
                 min-width: 50px;
                 text-align: center;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             }
             .day-tile-club:hover {
-                border-color: #667eea;
-                background: #f8f9ff;
+                border-color: #ff8a00;
+                background: #222;
                 transform: translateY(-2px);
-                box-shadow: 0 4px 8px rgba(102,126,234,0.2);
+                box-shadow: 0 4px 15px rgba(255,138,0,0.2);
             }
             .day-tile-club.selected {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                border-color: #667eea;
-                color: white;
-                box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+                background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
+                border-color: #ff8a00;
+                color: #0d0d0d;
+                box-shadow: 0 4px 20px rgba(255,138,0,0.4);
             }
         </style>""",
         LineBreak(),
@@ -1080,7 +1298,10 @@ def loading_page(state: State) -> Page:
                 left: 0;
                 width: 100vw;
                 height: 100vh;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+                background-image: 
+                    radial-gradient(ellipse at 30% 30%, rgba(255, 138, 0, 0.2) 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 70%, rgba(255, 179, 71, 0.15) 0%, transparent 50%);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1105,17 +1326,18 @@ def loading_page(state: State) -> Page:
             .calendar-page {
                 width: 100px;
                 height: 100px;
-                background: white;
+                background: #1a1a1a;
                 border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 40px rgba(255,138,0,0.2);
                 padding: 10px;
                 animation: pulse 2s ease-in-out infinite;
+                border: 1px solid rgba(255,138,0,0.3);
             }
             
             .calendar-header {
                 width: 100%;
                 height: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
                 border-radius: 6px 6px 0 0;
                 margin-bottom: 8px;
             }
@@ -1129,13 +1351,13 @@ def loading_page(state: State) -> Page:
             .calendar-cell {
                 width: 20px;
                 height: 20px;
-                background: #f0f0f0;
+                background: #2a2a2a;
                 border-radius: 4px;
                 animation: cellPulse 1.5s ease-in-out infinite;
             }
             
             .calendar-cell.active {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
                 animation: cellGlow 1.5s ease-in-out infinite;
             }
             
@@ -1151,9 +1373,10 @@ def loading_page(state: State) -> Page:
                 position: absolute;
                 width: 8px;
                 height: 8px;
-                background: white;
+                background: #ff8a00;
                 border-radius: 50%;
                 animation: sparkle 2s ease-in-out infinite;
+                box-shadow: 0 0 10px rgba(255,138,0,0.5);
             }
             
             .sparkle:nth-child(1) {
@@ -1175,10 +1398,11 @@ def loading_page(state: State) -> Page:
             }
             
             .loading-title {
-                color: white;
+                color: #ff8a00;
                 font-size: 28px;
                 margin: 20px 0;
                 animation: slideUp 0.6s ease;
+                text-shadow: 0 0 20px rgba(255,138,0,0.3);
             }
             
             .loading-steps {
@@ -1194,11 +1418,12 @@ def loading_page(state: State) -> Page:
                 padding: 15px;
                 margin: 10px auto;
                 max-width: 400px;
-                background: rgba(255,255,255,0.1);
+                background: rgba(255,138,0,0.1);
                 border-radius: 12px;
-                color: white;
+                color: #e5e5e5;
                 opacity: 0.5;
                 transition: all 0.3s ease;
+                border: 1px solid rgba(255,138,0,0.1);
             }
             
             .step-icon {
@@ -1213,8 +1438,9 @@ def loading_page(state: State) -> Page:
             
             .step.active {
                 opacity: 1;
-                background: rgba(255,255,255,0.2);
+                background: rgba(255,138,0,0.2);
                 transform: scale(1.05);
+                border-color: rgba(255,138,0,0.3);
             }
             
             .step-1 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 0s; }
@@ -1233,14 +1459,14 @@ def loading_page(state: State) -> Page:
             .spinner {
                 width: 60px;
                 height: 60px;
-                border: 5px solid rgba(255,255,255,0.2);
-                border-top-color: white;
+                border: 5px solid rgba(255,138,0,0.2);
+                border-top-color: #ff8a00;
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
             
             .loading-subtext {
-                color: rgba(255,255,255,0.8);
+                color: rgba(255,255,255,0.7);
                 font-size: 14px;
                 animation: slideUp 1.2s ease;
             }
@@ -1271,11 +1497,11 @@ def loading_page(state: State) -> Page:
             
             @keyframes cellGlow {
                 0%, 100% { 
-                    box-shadow: 0 0 5px rgba(102,126,234,0.5);
+                    box-shadow: 0 0 5px rgba(255,138,0,0.5);
                     transform: scale(1);
                 }
                 50% { 
-                    box-shadow: 0 0 20px rgba(102,126,234,1);
+                    box-shadow: 0 0 20px rgba(255,138,0,1);
                     transform: scale(1.1);
                 }
             }
@@ -1417,7 +1643,10 @@ def generate_schedule(state: State, club_name: str = "", club_time: str = "",
                 left: 0;
                 width: 100vw;
                 height: 100vh;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #0d0d0d 0%, #1a1a1a 50%, #0d0d0d 100%);
+                background-image: 
+                    radial-gradient(ellipse at 30% 30%, rgba(255, 138, 0, 0.2) 0%, transparent 50%),
+                    radial-gradient(ellipse at 70% 70%, rgba(255, 179, 71, 0.15) 0%, transparent 50%);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -1442,17 +1671,18 @@ def generate_schedule(state: State, club_name: str = "", club_time: str = "",
             .calendar-page {
                 width: 100px;
                 height: 100px;
-                background: white;
+                background: #1a1a1a;
                 border-radius: 12px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                box-shadow: 0 10px 40px rgba(0,0,0,0.5), 0 0 40px rgba(255,138,0,0.2);
                 padding: 10px;
                 animation: pulse 2s ease-in-out infinite;
+                border: 1px solid rgba(255,138,0,0.3);
             }
             
             .calendar-header {
                 width: 100%;
                 height: 20px;
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
                 border-radius: 6px 6px 0 0;
                 margin-bottom: 8px;
             }
@@ -1466,13 +1696,13 @@ def generate_schedule(state: State, club_name: str = "", club_time: str = "",
             .calendar-cell {
                 width: 20px;
                 height: 20px;
-                background: #f0f0f0;
+                background: #2a2a2a;
                 border-radius: 4px;
                 animation: cellPulse 1.5s ease-in-out infinite;
             }
             
             .calendar-cell.active {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                background: linear-gradient(135deg, #ff8a00 0%, #ff6b00 100%);
                 animation: cellGlow 1.5s ease-in-out infinite;
             }
             
@@ -1488,9 +1718,10 @@ def generate_schedule(state: State, club_name: str = "", club_time: str = "",
                 position: absolute;
                 width: 8px;
                 height: 8px;
-                background: white;
+                background: #ff8a00;
                 border-radius: 50%;
                 animation: sparkle 2s ease-in-out infinite;
+                box-shadow: 0 0 10px rgba(255,138,0,0.5);
             }
             
             .sparkle:nth-child(1) {
@@ -1712,49 +1943,135 @@ def generate_schedule_actual(state: State) -> Page:
         for c in state.clubs
     ]) if state.clubs else "No clubs/activities"
     
+    # Build explicit blocked time slots for each day of the week
+    day_mapping = {
+        'M': 'Monday', 'Tu': 'Tuesday', 'W': 'Wednesday', 
+        'Th': 'Thursday', 'F': 'Friday', 'Sa': 'Saturday', 'Su': 'Sunday'
+    }
+    
+    # Create a more detailed blocked times structure
+    blocked_times = []
+    blocked_by_day = {'Monday': [], 'Tuesday': [], 'Wednesday': [], 'Thursday': [], 'Friday': [], 'Saturday': [], 'Sunday': []}
+    
+    for course in state.courses:
+        # Parse days from course
+        days_str = course.days
+        i = 0
+        course_days = []
+        while i < len(days_str):
+            if i + 1 < len(days_str) and days_str[i:i+2] in day_mapping:
+                course_days.append(day_mapping[days_str[i:i+2]])
+                i += 2
+            elif days_str[i] in day_mapping:
+                course_days.append(day_mapping[days_str[i]])
+                i += 1
+            else:
+                i += 1
+        
+        for day in course_days:
+            blocked_times.append(f"  ❌ {day}: {course.time} → {course.name} (CLASS)")
+            if day in blocked_by_day:
+                blocked_by_day[day].append(f"{course.time} ({course.name})")
+    
+    for club in state.clubs:
+        blocked_times.append(f"  ❌ {club.day}: {club.time} → {club.name} (ACTIVITY)")
+        if club.day in blocked_by_day:
+            blocked_by_day[club.day].append(f"{club.time} ({club.name})")
+    
+    blocked_times_str = "\n".join(blocked_times) if blocked_times else "  None"
+    
+    # Create a summary by day
+    day_summary = []
+    for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+        if blocked_by_day[day]:
+            day_summary.append(f"  {day}: BUSY at " + ", ".join(blocked_by_day[day]))
+    day_summary_str = "\n".join(day_summary) if day_summary else "  No blocked times"
+    
     # GEMINI CALL: Generate structured schedule in simple pipe-delimited format
-    schedule_prompt = f"""You are a study scheduling assistant. Create a study schedule for a {state.major} student.
+    schedule_prompt = f"""You are a study scheduling assistant. Create an IDEAL study schedule for a {state.major} student.
 
 SEMESTER: {state.semester_start} to {state.semester_end}
-Create a comprehensive study schedule for the ENTIRE SEMESTER.
 
-Their courses:
+═══════════════════════════════════════════════════════════════════════════════
+⚠️⚠️⚠️ CRITICAL: READ ALL BLOCKED TIMES CAREFULLY BEFORE GENERATING ⚠️⚠️⚠️
+═══════════════════════════════════════════════════════════════════════════════
+
+STUDENT'S CLASS SCHEDULE (NEVER OVERLAP WITH THESE):
 {course_info}
 
-Their clubs/activities:
+STUDENT'S CLUB ACTIVITIES (NEVER OVERLAP WITH THESE):
 {club_info}
 
-CONSTRAINTS:
-- NO scheduling between 11:00 PM and 6:00 AM (sleep time)
-- Avoid class times: {', '.join([f"{c.days} {c.time}" for c in state.courses])}
-- Avoid club times: {club_info}
-- Create 1-3 hour study blocks
-- Prioritize courses based on major ({state.major}) and credit hours
-- Schedule throughout the ENTIRE semester from {state.semester_start} to {state.semester_end}
+═══════════════════════════════════════════════════════════════════════════════
+⛔⛔⛔ BLOCKED TIME SLOTS - ABSOLUTELY NO STUDY SESSIONS HERE: ⛔⛔⛔
+═══════════════════════════════════════════════════════════════════════════════
+{blocked_times_str}
+  ❌ EVERY DAY: 11:00 PM to 6:00 AM (sleep time)
 
-OUTPUT FORMAT - Return each study session on a new line in this EXACT format:
+DAILY SCHEDULE (WHEN STUDENT IS BUSY):
+{day_summary_str}
+
+═══════════════════════════════════════════════════════════════════════════════
+✅ SAFE TIME WINDOWS FOR STUDY SESSIONS:
+═══════════════════════════════════════════════════════════════════════════════
+- Early Morning: 6:00 AM - 8:00 AM (before classes start)
+- Between Classes: ONLY if there is 1+ HOUR GAP and study session ENDS 10 min before next class
+- After ALL Classes End: Usually after 3:00 PM - 5:00 PM depending on schedule
+- Evening: 6:00 PM - 10:00 PM (BEST TIME - prioritize this!)
+- Weekends: Saturday and Sunday are great for longer sessions
+
+═══════════════════════════════════════════════════════════════════════════════
+🚫 OVERLAP VALIDATION RULES - CHECK EACH SESSION AGAINST THESE:
+═══════════════════════════════════════════════════════════════════════════════
+For EVERY study session you generate, verify:
+1. The START TIME is NOT during any class/activity listed above
+2. The END TIME is NOT during any class/activity listed above
+3. The session does NOT span across a class time
+4. Leave 10-minute buffer BEFORE each class starts
+
+EXAMPLES OF INVALID SESSIONS (DO NOT DO THIS):
+- If class is 9:35 AM - 10:55 AM → Study at 9:00-10:00 is INVALID (overlaps)
+- If class is 9:35 AM - 10:55 AM → Study at 10:00-11:30 is INVALID (overlaps)
+- If class is 9:35 AM - 10:55 AM → Study at 9:00-11:30 is INVALID (spans across)
+
+EXAMPLES OF VALID SESSIONS:
+- If class ENDS at 10:55 AM and next is 12:40 PM → Study 11:00-12:30 is VALID
+- If last class ends at 3:30 PM → Study 4:00-6:00 PM is VALID
+- Evening study at 7:00 PM - 9:00 PM is almost always VALID
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STUDY SESSION RULES:
+1. Sessions: 1-2 hours (shorter between classes if needed)
+2. Per course: 2-3 study sessions per week
+3. More credits = more study time needed
+4. Distribute evenly across the week
+5. PREFER EVENING (6-10 PM) AND WEEKEND SESSIONS
+
+OUTPUT FORMAT (one session per line):
 DATE|START_TIME|END_TIME|COURSE_CODE|DESCRIPTION
 
 Example:
-2025-12-09|19:00|21:00|CISC210080|Review assembly language programming
-2025-12-10|14:00|16:00|MATH342010|Practice linear algebra problems
-2025-12-11|08:00|10:00|CPEG202080|Study logic gates and circuits
+2026-02-03|18:00|20:00|CISC210080|Review data structures concepts
+2026-02-04|19:00|21:00|MATH342010|Practice problem sets
 
 RULES:
-- Use 24-hour time format (e.g., 19:00 not 7:00 PM)
+- 24-hour time format (18:00 not 6:00 PM)
 - Date format: YYYY-MM-DD
-- Create 50-80 study sessions spread across the ENTIRE semester ({state.semester_start} to {state.semester_end})
-- Vary times: morning (08:00-11:00), afternoon (13:00-17:00), evening (18:00-22:00)
-- Each line must have exactly 5 fields separated by | (pipe character)
-- Distribute sessions evenly throughout the semester
-- Increase frequency closer to typical exam periods (midterms around week 8, finals in last 2 weeks)
+- Create 50-80 study sessions across the semester
+- 5 fields per line separated by |
+- Use EXACT course codes from above
 
-START OUTPUT (no extra text before or after):"""
+DOUBLE-CHECK: Before outputting each line, verify the time slot is FREE on that day.
+
+START OUTPUT (only pipe-delimited lines, no other text):"""
 
     try:
         # Call Gemini for schedule
         print("=" * 80)
         print("Calling Gemini for schedule generation...")
+        print("Blocked times:", blocked_times_str)
+        print("Day summary:", day_summary_str)
         print("=" * 80)
         schedule_response = call_gemini([LLMMessage("user", schedule_prompt)])
         
@@ -1889,26 +2206,57 @@ def show_results(state: State) -> Page:
     def parse_time_range(time_str):
         """Parse time string and return (start_hour, start_min, end_hour, end_min)"""
         try:
-            parts = time_str.replace(' ', '').split('-')
-            if len(parts) != 2:
+            print(f"  Parsing time: '{time_str}'")
+            
+            # Split by ' - ' first (with spaces), then try just '-'
+            if ' - ' in time_str:
+                parts = time_str.split(' - ')
+            elif '-' in time_str:
+                parts = time_str.split('-')
+            else:
+                print(f"  No dash found in time string")
                 return None
             
-            start_str, end_str = parts
+            if len(parts) != 2:
+                print(f"  Expected 2 parts, got {len(parts)}")
+                return None
             
-            # Parse start time
-            if 'AM' in start_str or 'PM' in start_str:
-                start_time = datetime.strptime(start_str, '%I:%M%p')
-            else:
-                start_time = datetime.strptime(start_str, '%H:%M')
+            start_str = parts[0].strip()
+            end_str = parts[1].strip()
             
-            # Parse end time
-            if 'AM' in end_str or 'PM' in end_str:
-                end_time = datetime.strptime(end_str, '%I:%M%p')
-            else:
-                end_time = datetime.strptime(end_str, '%H:%M')
+            print(f"  Start: '{start_str}', End: '{end_str}'")
             
-            return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
-        except:
+            # Parse start time - try multiple formats
+            start_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    start_time = datetime.strptime(start_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if start_time is None:
+                print(f"  Could not parse start time: '{start_str}'")
+                return None
+            
+            # Parse end time - try multiple formats
+            end_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    end_time = datetime.strptime(end_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if end_time is None:
+                print(f"  Could not parse end time: '{end_str}'")
+                return None
+            
+            result = (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
+            print(f"  Parsed successfully: {result}")
+            return result
+        except Exception as e:
+            print(f"  Error parsing time: {e}")
             return None
     
     # Generate recurring class events for entire semester
@@ -1971,8 +2319,8 @@ def show_results(state: State) -> Page:
             "start": event.start_datetime,
             "end": event.end_datetime,
             "description": event.description,
-            "backgroundColor": "#667eea",  # Purple for study sessions
-            "borderColor": "#764ba2",
+            "backgroundColor": "#ff8a00",  # Orange for study sessions
+            "borderColor": "#ff6b00",
             "extendedProps": {
                 "type": "study",
                 "course": event.course_code,
@@ -1982,8 +2330,71 @@ def show_results(state: State) -> Page:
         for event in state.study_events
     ]
     
+    # Generate club/activity events for entire semester
+    club_events = []
+    if state.clubs and state.semester_start and state.semester_end:
+        try:
+            print(f"Generating club events for {len(state.clubs)} clubs")
+            semester_start = datetime.strptime(state.semester_start, '%Y-%m-%d')
+            semester_end = datetime.strptime(state.semester_end, '%Y-%m-%d')
+            
+            # Day name to weekday number mapping
+            day_name_map = {
+                'Monday': 0, 'Tuesday': 1, 'Wednesday': 2, 'Thursday': 3,
+                'Friday': 4, 'Saturday': 5, 'Sunday': 6
+            }
+            
+            for club in state.clubs:
+                print(f"Processing club: {club.name}, Day: {club.day}, Time: {club.time}")
+                
+                # Get weekday number from day name
+                weekday = day_name_map.get(club.day)
+                if weekday is None:
+                    print(f"  Skipping club {club.name} - invalid day: {club.day}")
+                    continue
+                
+                # Parse the time
+                time_parts = parse_time_range(club.time)
+                if not time_parts:
+                    print(f"  Skipping club {club.name} - invalid time: {club.time}")
+                    continue
+                
+                start_hour, start_min, end_hour, end_min = time_parts
+                
+                # Generate events for each occurrence
+                current_date = semester_start
+                event_count = 0
+                while current_date <= semester_end:
+                    if current_date.weekday() == weekday:
+                        club_start = current_date.replace(hour=start_hour, minute=start_min, second=0)
+                        club_end = current_date.replace(hour=end_hour, minute=end_min, second=0)
+                        
+                        club_events.append({
+                            "title": f"🎯 {club.name}",
+                            "start": club_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "end": club_end.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "description": f"Club/Activity: {club.name}",
+                            "backgroundColor": "#9b59b6",  # Purple for clubs
+                            "borderColor": "#8e44ad",
+                            "extendedProps": {
+                                "type": "club",
+                                "name": club.name,
+                                "description": f"Activity: {club.name}"
+                            }
+                        })
+                        event_count += 1
+                    
+                    current_date += timedelta(days=1)
+                print(f"  Generated {event_count} club meetings for {club.name}")
+        except Exception as e:
+            print(f"Error generating club events: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"Total club events generated: {len(club_events)}")
+    
     # Combine all events
-    all_events_json = json.dumps(study_events + class_events)
+    all_events_json = json.dumps(study_events + class_events + club_events)
     
     # JavaScript for FullCalendar with filters
     calendar_js = f"""
@@ -2051,20 +2462,25 @@ def show_results(state: State) -> Page:
         // Filter functionality
         var showStudy = true;
         var showClasses = true;
+        var showClubs = true;
         
         function updateCalendar() {{
             var filteredEvents = allEvents.filter(function(event) {{
                 if (event.extendedProps.type === 'study' && !showStudy) return false;
                 if (event.extendedProps.type === 'class' && !showClasses) return false;
+                if (event.extendedProps.type === 'club' && !showClubs) return false;
                 return true;
             }});
             calendar.removeAllEvents();
             calendar.addEventSource(filteredEvents);
             
             // Update count
+            var studyCount = filteredEvents.filter(e => e.extendedProps.type === 'study').length;
+            var classCount = filteredEvents.filter(e => e.extendedProps.type === 'class').length;
+            var clubCount = filteredEvents.filter(e => e.extendedProps.type === 'club').length;
             document.getElementById('event-count').textContent = 
                 'Showing ' + filteredEvents.length + ' events (' + 
-                {len(state.study_events)} + ' study sessions, ' + {len(class_events)} + ' class meetings)';
+                studyCount + ' study, ' + classCount + ' classes, ' + clubCount + ' activities)';
         }}
         
         document.getElementById('filter-study').addEventListener('change', function(e) {{
@@ -2074,6 +2490,11 @@ def show_results(state: State) -> Page:
         
         document.getElementById('filter-classes').addEventListener('change', function(e) {{
             showClasses = e.target.checked;
+            updateCalendar();
+        }});
+        
+        document.getElementById('filter-clubs').addEventListener('change', function(e) {{
+            showClubs = e.target.checked;
             updateCalendar();
         }});
     }});
@@ -2091,7 +2512,7 @@ def show_results(state: State) -> Page:
                     LineBreak(),
                     f"Semester: {state.semester_start} to {state.semester_end}",
                     LineBreak(),
-                    f"Total Events: {len(state.study_events) + len(class_events)} ({len(state.study_events)} study sessions + {len(class_events)} classes)",
+                    f"Total Events: {len(state.study_events) + len(class_events) + len(club_events)} ({len(state.study_events)} study + {len(class_events)} classes + {len(club_events)} activities)",
                     classes="info-box"
                 ),
                 "center"
@@ -2101,23 +2522,27 @@ def show_results(state: State) -> Page:
             LineBreak(),
             
             # Calendar View
-            change_color(Header("📅 Your Complete Schedule", 2), "#667eea"),
-            "<p id='event-count' style='color: #666; font-size: 14px;'>Showing " + str(len(state.study_events) + len(class_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " class meetings)</p>",
+            change_color(Header("📅 Your Complete Schedule", 2), "#ff8a00"),
+            "<p id='event-count' style='color: #999; font-size: 14px;'>Showing " + str(len(state.study_events) + len(class_events) + len(club_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " classes, " + str(len(club_events)) + " activities)</p>",
             
             # Filters
-            """<div style='display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;'>
-                <label style='display: flex; align-items: center; cursor: pointer;'>
-                    <input type='checkbox' id='filter-study' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+            """<div style='display: flex; gap: 20px; margin-bottom: 20px; padding: 15px; background: #1f1f1f; border-radius: 10px; border: 1px solid #333; flex-wrap: wrap;'>
+                <label style='display: flex; align-items: center; cursor: pointer; color: #e5e5e5;'>
+                    <input type='checkbox' id='filter-study' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer; accent-color: #ff8a00;'>
                     <span style='font-weight: 500;'>✏️ Study Sessions</span>
                 </label>
-                <label style='display: flex; align-items: center; cursor: pointer;'>
-                    <input type='checkbox' id='filter-classes' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer;'>
+                <label style='display: flex; align-items: center; cursor: pointer; color: #e5e5e5;'>
+                    <input type='checkbox' id='filter-classes' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer; accent-color: #ff8a00;'>
                     <span style='font-weight: 500;'>📚 Classes</span>
+                </label>
+                <label style='display: flex; align-items: center; cursor: pointer; color: #e5e5e5;'>
+                    <input type='checkbox' id='filter-clubs' checked style='margin-right: 10px; width: 18px; height: 18px; cursor: pointer; accent-color: #9b59b6;'>
+                    <span style='font-weight: 500;'>🎯 Clubs/Activities</span>
                 </label>
             </div>""",
             
             # Calendar Container
-            "<div id='results-calendar' style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 600px;'></div>",
+            "<div id='results-calendar' style='background: #1a1a1a; padding: 20px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4), 0 0 30px rgba(255,138,0,0.1); min-height: 600px; border: 1px solid rgba(255,138,0,0.2);'></div>",
             
             LineBreak(),
             LineBreak(),
@@ -2125,10 +2550,10 @@ def show_results(state: State) -> Page:
             LineBreak(),
             
             # Tips Section
-            change_color(Header("💡 Study Tips & Recommendations", 2), "#667eea"),
+            change_color(Header("💡 Study Tips & Recommendations", 2), "#ff8a00"),
             change_background_color(
                 change_padding(PreformattedText(state.tips), "20px"),
-                "#f8f9fa"
+                "#1f1f1f"
             ),
             
             LineBreak(),
@@ -2167,18 +2592,44 @@ def export_csv(state: State) -> Page:
     
     def parse_time_range(time_str):
         try:
-            parts = time_str.replace(' ', '').split('-')
+            # Split by ' - ' first (with spaces), then try just '-'
+            if ' - ' in time_str:
+                parts = time_str.split(' - ')
+            elif '-' in time_str:
+                parts = time_str.split('-')
+            else:
+                return None
+            
             if len(parts) != 2:
                 return None
-            start_str, end_str = parts
-            if 'AM' in start_str or 'PM' in start_str:
-                start_time = datetime.strptime(start_str, '%I:%M%p')
-            else:
-                start_time = datetime.strptime(start_str, '%H:%M')
-            if 'AM' in end_str or 'PM' in end_str:
-                end_time = datetime.strptime(end_str, '%I:%M%p')
-            else:
-                end_time = datetime.strptime(end_str, '%H:%M')
+            
+            start_str = parts[0].strip()
+            end_str = parts[1].strip()
+            
+            # Parse start time - try multiple formats
+            start_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    start_time = datetime.strptime(start_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if start_time is None:
+                return None
+            
+            # Parse end time - try multiple formats
+            end_time = None
+            for fmt in ['%I:%M %p', '%I:%M%p', '%H:%M', '%I:%M']:
+                try:
+                    end_time = datetime.strptime(end_str, fmt)
+                    break
+                except ValueError:
+                    continue
+            
+            if end_time is None:
+                return None
+            
             return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
         except:
             return None
