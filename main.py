@@ -19,6 +19,12 @@ set_site_information(
 )
 set_gemini_server("https://draftergeminiproxy.avneet-sehgal72.workers.dev/")
 
+# Add FullCalendar CSS and JS globally via header so it works on deployed site
+add_website_header("""
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+""")
+
 # Modern Custom CSS Styling - Dark/Orange Theme (Claude-inspired)
 add_website_css("""
     @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
@@ -1041,8 +1047,6 @@ def show_courses(state: State) -> Page:
     events_json = json.dumps(preview_events)
     
     calendar_preview = f"""
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {{
         console.log('Initializing course preview calendar...');
@@ -2398,8 +2402,6 @@ def show_results(state: State) -> Page:
     
     # JavaScript for FullCalendar with filters
     calendar_js = f"""
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <script>
     document.addEventListener('DOMContentLoaded', function() {{
         var calendarEl = document.getElementById('results-calendar');
