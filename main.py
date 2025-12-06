@@ -452,8 +452,16 @@ def parse_csv(state: State, csv_file: str) -> Page:
     """Parse uploaded CSV and display courses"""
     try:
         state.courses = parse_course_csv(csv_file)
+        print(f"✅ Parsed {len(state.courses)} courses from CSV")
+        for course in state.courses[:5]:  # Print first 5
+            print(f"  - {course.name}: {course.days} at {course.time}")
+        if len(state.courses) > 5:
+            print(f"  ... and {len(state.courses) - 5} more")
         return show_courses(state)
     except Exception as e:
+        print(f"❌ Error parsing CSV: {e}")
+        import traceback
+        traceback.print_exc()
         return Page(state, [
             Header("Error Parsing CSV", 2),
             LineBreak(),
@@ -507,9 +515,65 @@ def manual_course_entry(state: State) -> Page:
             SelectBox("credits", ["1", "2", "3", "4", "5"], "3"),
             LineBreak(),
             LineBreak(),
-            "Days (e.g., MWF, TTh, MW):",
+            "Days of the Week:",
             LineBreak(),
-            TextBox("days"),
+            """<div style='display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;'>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_monday' value='M' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>M</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_tuesday' value='Tu' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Tu</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_wednesday' value='W' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>W</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_thursday' value='Th' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Th</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_friday' value='F' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>F</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_saturday' value='Sa' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Sa</span>
+                </label>
+                <label style='cursor: pointer;'>
+                    <input type='checkbox' name='day_sunday' value='Su' style='display: none;'>
+                    <span class='day-tile' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Su</span>
+                </label>
+            </div>
+            <style>
+                .day-tile {
+                    display: inline-block;
+                    padding: 12px 18px;
+                    background: white;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    font-weight: 600;
+                    color: #666;
+                    transition: all 0.2s ease;
+                    min-width: 50px;
+                    text-align: center;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+                }
+                .day-tile:hover {
+                    border-color: #667eea;
+                    background: #f8f9ff;
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 8px rgba(102,126,234,0.2);
+                }
+                .day-tile.selected {
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    border-color: #667eea;
+                    color: white;
+                    box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+                }
+            </style>""",
             LineBreak(),
             LineBreak(),
             "Time (e.g., 9:00 AM - 9:50 AM):",
@@ -526,14 +590,28 @@ def manual_course_entry(state: State) -> Page:
     ])
 
 @route
-def add_course(state: State, course_name: str, credits: str, days: str, time: str, 
-               semester_start: str, semester_end: str) -> Page:
+def add_course(state: State, course_name: str, credits: str, time: str, 
+               semester_start: str, semester_end: str,
+               day_monday: str = "", day_tuesday: str = "", day_wednesday: str = "",
+               day_thursday: str = "", day_friday: str = "", day_saturday: str = "", 
+               day_sunday: str = "") -> Page:
     """Add a course to the list and update semester dates"""
     # Update semester dates if provided
     if semester_start:
         state.semester_start = semester_start
     if semester_end:
         state.semester_end = semester_end
+    
+    # Combine selected days into a string
+    days_list = []
+    if day_monday: days_list.append("M")
+    if day_tuesday: days_list.append("Tu")
+    if day_wednesday: days_list.append("W")
+    if day_thursday: days_list.append("Th")
+    if day_friday: days_list.append("F")
+    if day_saturday: days_list.append("Sa")
+    if day_sunday: days_list.append("Su")
+    days = "".join(days_list)
     
     # Add course if all fields are filled
     if course_name and days and time:
@@ -546,20 +624,150 @@ def add_course(state: State, course_name: str, credits: str, days: str, time: st
     return show_courses(state)
 
 @route
+@route
 def show_courses(state: State) -> Page:
     """Display all courses and option to continue"""
+    from datetime import datetime, timedelta
+    import json
+    
     course_list = [f"{c.name} ({c.credits} credits) - {c.days} at {c.time}" for c in state.courses]
+    
+    # Helper functions for calendar preview
+    def parse_days(days_str):
+        day_map = {'M': 0, 'Tu': 1, 'W': 2, 'Th': 3, 'F': 4, 'Sa': 5, 'Su': 6}
+        days = []
+        i = 0
+        while i < len(days_str):
+            if i + 1 < len(days_str) and days_str[i:i+2] in day_map:
+                days.append(day_map[days_str[i:i+2]])
+                i += 2
+            elif days_str[i] in day_map:
+                days.append(day_map[days_str[i]])
+                i += 1
+            else:
+                i += 1
+        return days
+    
+    def parse_time_range(time_str):
+        try:
+            parts = time_str.replace(' ', '').split('-')
+            if len(parts) != 2:
+                return None
+            start_str, end_str = parts
+            if 'AM' in start_str or 'PM' in start_str:
+                start_time = datetime.strptime(start_str, '%I:%M%p')
+            else:
+                start_time = datetime.strptime(start_str, '%H:%M')
+            if 'AM' in end_str or 'PM' in end_str:
+                end_time = datetime.strptime(end_str, '%I:%M%p')
+            else:
+                end_time = datetime.strptime(end_str, '%H:%M')
+            return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
+        except:
+            return None
+    
+    # Generate class events for calendar preview (full semester)
+    preview_events = []
+    if state.courses and state.semester_start:
+        try:
+            semester_start = datetime.strptime(state.semester_start, '%Y-%m-%d')
+            # Use semester_end if available, otherwise show 4 weeks
+            if state.semester_end:
+                preview_end = datetime.strptime(state.semester_end, '%Y-%m-%d')
+            else:
+                preview_end = semester_start + timedelta(days=28)
+            
+            for course in state.courses:
+                weekdays = parse_days(course.days)
+                time_parts = parse_time_range(course.time)
+                
+                if not weekdays or not time_parts:
+                    continue
+                
+                start_hour, start_min, end_hour, end_min = time_parts
+                
+                current_date = semester_start
+                while current_date <= preview_end:
+                    if current_date.weekday() in weekdays:
+                        class_start = current_date.replace(hour=start_hour, minute=start_min, second=0)
+                        class_end = current_date.replace(hour=end_hour, minute=end_min, second=0)
+                        
+                        preview_events.append({
+                            "title": course.name,
+                            "start": class_start.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "end": class_end.strftime('%Y-%m-%dT%H:%M:%S'),
+                            "backgroundColor": "#e74c3c",
+                            "borderColor": "#c0392b"
+                        })
+                    current_date += timedelta(days=1)
+        except Exception as e:
+            print(f"Error generating preview: {e}")
+    
+    events_json = json.dumps(preview_events)
+    
+    calendar_preview = f"""
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {{
+        console.log('Initializing course preview calendar...');
+        var calendarEl = document.getElementById('preview-calendar');
+        if (!calendarEl) {{
+            console.error('Calendar element #preview-calendar not found!');
+            return;
+        }}
+        
+        var events = {events_json};
+        console.log('Loaded ' + events.length + ' course events for preview');
+        
+        try {{
+            var calendar = new FullCalendar.Calendar(calendarEl, {{
+                initialView: 'timeGridWeek',
+                initialDate: '{state.semester_start}',
+                headerToolbar: {{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                }},
+                slotMinTime: '06:00:00',
+                slotMaxTime: '23:00:00',
+                allDaySlot: false,
+                height: 'auto',
+                events: events,
+                eventClick: function(info) {{
+                    alert(info.event.title + '\\n' + 
+                          info.event.start.toLocaleString());
+                }}
+            }});
+            calendar.render();
+            console.log('Course preview calendar rendered successfully!');
+        }} catch(e) {{
+            console.error('Error rendering calendar:', e);
+        }}
+    }});
+    </script>
+    """ if state.courses else ""
     
     return Page(state, [
         Div(
+            calendar_preview,
             Header("Your Courses", 2),
             LineBreak(),
             f"Major: {state.major}",
             LineBreak(),
             f"Semester: {state.semester_start} to {state.semester_end}",
             LineBreak(),
+            f"Total Courses: {len(state.courses)}",
             LineBreak(),
-            NumberedList(course_list) if course_list else "No courses added yet.",
+            LineBreak(),
+            
+            # Calendar Preview - Always show if courses exist
+            ("<div style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); margin: 20px 0;'>" +
+             "<h3 style='color: #667eea; margin-top: 0;'>📅 Your Class Schedule</h3>" +
+             "<p style='color: #666;'>Showing your classes for the entire semester</p>" +
+             "<div id='preview-calendar' style='min-height: 500px;'></div>" +
+             "</div>") if state.courses else "<p>No courses added yet.</p>",
+            
             LineBreak(),
             Button("Add Another Course", "/manual_course_entry"),
             " ",
@@ -589,9 +797,65 @@ def clubs_page(state: State) -> Page:
         TextBox("club_name"),
         LineBreak(),
         LineBreak(),
-        "Day:",
+        "Days of the Week:",
         LineBreak(),
-        SelectBox("club_day", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]),
+        """<div style='display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0;'>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_monday' value='Monday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Mon</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_tuesday' value='Tuesday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Tue</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_wednesday' value='Wednesday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Wed</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_thursday' value='Thursday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Thu</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_friday' value='Friday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Fri</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_saturday' value='Saturday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Sat</span>
+            </label>
+            <label style='cursor: pointer;'>
+                <input type='checkbox' name='club_day_sunday' value='Sunday' style='display: none;'>
+                <span class='day-tile-club' onclick='this.parentElement.querySelector("input").checked = !this.parentElement.querySelector("input").checked; this.classList.toggle("selected");'>Sun</span>
+            </label>
+        </div>
+        <style>
+            .day-tile-club {
+                display: inline-block;
+                padding: 12px 18px;
+                background: white;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-weight: 600;
+                color: #666;
+                transition: all 0.2s ease;
+                min-width: 50px;
+                text-align: center;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            }
+            .day-tile-club:hover {
+                border-color: #667eea;
+                background: #f8f9ff;
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(102,126,234,0.2);
+            }
+            .day-tile-club.selected {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-color: #667eea;
+                color: white;
+                box-shadow: 0 4px 12px rgba(102,126,234,0.4);
+            }
+        </style>""",
         LineBreak(),
         LineBreak(),
         "Time:",
@@ -599,7 +863,7 @@ def clubs_page(state: State) -> Page:
         TextBox("club_time"),
         LineBreak(),
         LineBreak(),
-        Button("Add Activity", add_club),
+        Button("Add Activity", "/add_club"),
         LineBreak(),
         LineBreak(),
         HorizontalRule(),
@@ -608,26 +872,716 @@ def clubs_page(state: State) -> Page:
         BulletedList(club_list) if club_list else "No activities added yet.",
         LineBreak(),
         LineBreak(),
-        Button("Generate Study Schedule", generate_schedule) if state.courses else italic("Please add courses first"),
+        Button("Generate Study Schedule", "/generate_schedule") if state.courses else "<em>Please add courses first</em>",
         LineBreak(),
         LineBreak(),
-        Button("← Back to Courses", show_courses)
+        Button("← Back to Courses", "/show_courses")
     ])
 
 @route
-def add_club(state: State, club_name: str, club_day: str, club_time: str) -> Page:
+def add_club(state: State, club_name: str, club_time: str,
+             club_day_monday: str = "", club_day_tuesday: str = "", club_day_wednesday: str = "",
+             club_day_thursday: str = "", club_day_friday: str = "", club_day_saturday: str = "", 
+             club_day_sunday: str = "") -> Page:
     """Add a club activity"""
+    # Combine selected days into a string
+    days_list = []
+    if club_day_monday: days_list.append("Monday")
+    if club_day_tuesday: days_list.append("Tuesday")
+    if club_day_wednesday: days_list.append("Wednesday")
+    if club_day_thursday: days_list.append("Thursday")
+    if club_day_friday: days_list.append("Friday")
+    if club_day_saturday: days_list.append("Saturday")
+    if club_day_sunday: days_list.append("Sunday")
+    club_days = ", ".join(days_list) if days_list else "Monday"
+    
     if club_name and club_time:
         state.clubs.append(ClubActivity(
             name=club_name,
-            day=club_day,
+            day=club_days,
             time=club_time
         ))
     return clubs_page(state)
 
 @route
-def generate_schedule(state: State) -> Page:
-    """Generate AI study schedule using Gemini with pipe-delimited text output"""
+def loading_page(state: State) -> Page:
+    """Display loading screen while generating schedule"""
+    return Page(state, [
+        """
+        <div class="loading-overlay">
+            <div class="loading-container">
+                <div class="loading-icon">
+                    <div class="calendar-animation">
+                        <div class="calendar-page">
+                            <div class="calendar-header"></div>
+                            <div class="calendar-grid">
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell active"></div>
+                                <div class="calendar-cell"></div>
+                            </div>
+                        </div>
+                        <div class="sparkles">
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                        </div>
+                    </div>
+                </div>
+                <h2 class="loading-title">Creating Your Perfect Study Schedule ✨</h2>
+                <div class="loading-steps">
+                    <div class="step step-1">
+                        <div class="step-icon">📚</div>
+                        <div class="step-text">Analyzing your courses</div>
+                    </div>
+                    <div class="step step-2">
+                        <div class="step-icon">🎯</div>
+                        <div class="step-text">Optimizing study times</div>
+                    </div>
+                    <div class="step step-3">
+                        <div class="step-icon">💡</div>
+                        <div class="step-text">Generating personalized tips</div>
+                    </div>
+                    <div class="step step-4">
+                        <div class="step-icon">📅</div>
+                        <div class="step-text">Building your calendar</div>
+                    </div>
+                </div>
+                <div class="loading-bar-container">
+                    <div class="loading-bar"></div>
+                </div>
+                <p class="loading-subtext">This may take a few moments...</p>
+            </div>
+        </div>
+        
+        <style>
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                animation: fadeIn 0.5s ease;
+            }
+            
+            .loading-container {
+                text-align: center;
+                padding: 40px;
+                max-width: 600px;
+            }
+            
+            .calendar-animation {
+                position: relative;
+                width: 120px;
+                height: 120px;
+                margin: 0 auto 30px;
+                animation: float 3s ease-in-out infinite;
+            }
+            
+            .calendar-page {
+                width: 100px;
+                height: 100px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                padding: 10px;
+                animation: pulse 2s ease-in-out infinite;
+            }
+            
+            .calendar-header {
+                width: 100%;
+                height: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 6px 6px 0 0;
+                margin-bottom: 8px;
+            }
+            
+            .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            
+            .calendar-cell {
+                width: 20px;
+                height: 20px;
+                background: #f0f0f0;
+                border-radius: 4px;
+                animation: cellPulse 1.5s ease-in-out infinite;
+            }
+            
+            .calendar-cell.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                animation: cellGlow 1.5s ease-in-out infinite;
+            }
+            
+            .sparkles {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .sparkle {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                background: white;
+                border-radius: 50%;
+                animation: sparkle 2s ease-in-out infinite;
+            }
+            
+            .sparkle:nth-child(1) {
+                top: 10%;
+                left: 20%;
+                animation-delay: 0s;
+            }
+            
+            .sparkle:nth-child(2) {
+                top: 70%;
+                right: 20%;
+                animation-delay: 0.7s;
+            }
+            
+            .sparkle:nth-child(3) {
+                bottom: 20%;
+                left: 10%;
+                animation-delay: 1.4s;
+            }
+            
+            .loading-title {
+                color: white;
+                font-size: 28px;
+                margin: 20px 0;
+                animation: slideUp 0.6s ease;
+            }
+            
+            .loading-steps {
+                margin: 30px 0;
+                animation: slideUp 0.8s ease;
+            }
+            
+            .step {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 15px;
+                padding: 15px;
+                margin: 10px auto;
+                max-width: 400px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 12px;
+                color: white;
+                opacity: 0.5;
+                transition: all 0.3s ease;
+            }
+            
+            .step-icon {
+                font-size: 24px;
+                animation: bounce 2s ease-in-out infinite;
+            }
+            
+            .step-text {
+                font-size: 16px;
+                font-weight: 500;
+            }
+            
+            .step.active {
+                opacity: 1;
+                background: rgba(255,255,255,0.2);
+                transform: scale(1.05);
+            }
+            
+            .step-1 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 0s; }
+            .step-2 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 2s; }
+            .step-3 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 4s; }
+            .step-4 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 6s; }
+            
+            .spinner-container {
+                margin: 40px 0 30px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                animation: slideUp 1s ease;
+            }
+            
+            .spinner {
+                width: 60px;
+                height: 60px;
+                border: 5px solid rgba(255,255,255,0.2);
+                border-top-color: white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            .loading-subtext {
+                color: rgba(255,255,255,0.8);
+                font-size: 14px;
+                animation: slideUp 1.2s ease;
+            }
+            
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-20px); }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+            
+            @keyframes cellPulse {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
+            }
+            
+            @keyframes cellGlow {
+                0%, 100% { 
+                    box-shadow: 0 0 5px rgba(102,126,234,0.5);
+                    transform: scale(1);
+                }
+                50% { 
+                    box-shadow: 0 0 20px rgba(102,126,234,1);
+                    transform: scale(1.1);
+                }
+            }
+            
+            @keyframes sparkle {
+                0%, 100% { 
+                    opacity: 0;
+                    transform: scale(0);
+                }
+                50% { 
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-5px); }
+            }
+            
+            @keyframes stepActivate {
+                0%, 100% { 
+                    opacity: 0.5;
+                    background: rgba(255,255,255,0.1);
+                    transform: scale(1);
+                }
+                12.5%, 25% { 
+                    opacity: 1;
+                    background: rgba(255,255,255,0.2);
+                    transform: scale(1.05);
+                }
+            }
+        </style>
+        
+        <script>
+            // Auto-redirect to actual generation after showing loading animation
+            setTimeout(function() {
+                window.location.href = '/generate_schedule_actual';
+            }, 1000);
+        </script>
+        """
+    ])
+
+@route
+def generate_schedule(state: State, club_name: str = "", club_time: str = "",
+                     club_day_monday: str = "", club_day_tuesday: str = "", club_day_wednesday: str = "",
+                     club_day_thursday: str = "", club_day_friday: str = "", club_day_saturday: str = "", 
+                     club_day_sunday: str = "") -> Page:
+    """Show loading page and generate schedule"""
+    # Ignore the club parameters - they're just from the form
+    
+    print(f"\n🎯 GENERATE_SCHEDULE called with {len(state.courses)} courses")
+    for i, course in enumerate(state.courses[:3]):
+        print(f"  Course {i+1}: {course.name} - {course.days} at {course.time}")
+    if len(state.courses) > 3:
+        print(f"  ... and {len(state.courses) - 3} more")
+    
+    # Prepare course and club information
+    course_info = "\n".join([
+        f"- {c.name} ({c.credits} credits, {c.days} at {c.time})"
+        for c in state.courses
+    ])
+    
+    club_info = "\n".join([
+        f"- {c.name} on {c.day} at {c.time}"
+        for c in state.clubs
+    ]) if state.clubs else "No clubs/activities"
+    
+    # Start with loading page
+    loading_html = """
+        <div class="loading-overlay" id="loadingOverlay">
+            <div class="loading-container">
+                <div class="loading-icon">
+                    <div class="calendar-animation">
+                        <div class="calendar-page">
+                            <div class="calendar-header"></div>
+                            <div class="calendar-grid">
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell"></div>
+                                <div class="calendar-cell active"></div>
+                                <div class="calendar-cell"></div>
+                            </div>
+                        </div>
+                        <div class="sparkles">
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                            <div class="sparkle"></div>
+                        </div>
+                    </div>
+                </div>
+                <h2 class="loading-title">Creating Your Perfect Study Schedule ✨</h2>
+                <div class="loading-steps">
+                    <div class="step step-1">
+                        <div class="step-icon">📚</div>
+                        <div class="step-text">Analyzing your courses</div>
+                    </div>
+                    <div class="step step-2">
+                        <div class="step-icon">🎯</div>
+                        <div class="step-text">Optimizing study times</div>
+                    </div>
+                    <div class="step step-3">
+                        <div class="step-icon">💡</div>
+                        <div class="step-text">Generating personalized tips</div>
+                    </div>
+                    <div class="step step-4">
+                        <div class="step-icon">📅</div>
+                        <div class="step-text">Building your calendar</div>
+                    </div>
+                </div>
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                </div>
+                <p class="loading-subtext" id="progressText">Preparing your schedule...</p>
+            </div>
+        </div>
+        
+        <iframe id="generationFrame" style="display: none;"></iframe>
+        """
+    
+    # Add the same styles from loading_page
+    loading_styles = """
+        <style>
+            .loading-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9999;
+                animation: fadeIn 0.5s ease;
+            }
+            
+            .loading-container {
+                text-align: center;
+                padding: 40px;
+                max-width: 600px;
+            }
+            
+            .calendar-animation {
+                position: relative;
+                width: 120px;
+                height: 120px;
+                margin: 0 auto 30px;
+                animation: float 3s ease-in-out infinite;
+            }
+            
+            .calendar-page {
+                width: 100px;
+                height: 100px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                padding: 10px;
+                animation: pulse 2s ease-in-out infinite;
+            }
+            
+            .calendar-header {
+                width: 100%;
+                height: 20px;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border-radius: 6px 6px 0 0;
+                margin-bottom: 8px;
+            }
+            
+            .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 6px;
+            }
+            
+            .calendar-cell {
+                width: 20px;
+                height: 20px;
+                background: #f0f0f0;
+                border-radius: 4px;
+                animation: cellPulse 1.5s ease-in-out infinite;
+            }
+            
+            .calendar-cell.active {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                animation: cellGlow 1.5s ease-in-out infinite;
+            }
+            
+            .sparkles {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .sparkle {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                background: white;
+                border-radius: 50%;
+                animation: sparkle 2s ease-in-out infinite;
+            }
+            
+            .sparkle:nth-child(1) {
+                top: 10%;
+                left: 20%;
+                animation-delay: 0s;
+            }
+            
+            .sparkle:nth-child(2) {
+                top: 70%;
+                right: 20%;
+                animation-delay: 0.7s;
+            }
+            
+            .sparkle:nth-child(3) {
+                bottom: 20%;
+                left: 10%;
+                animation-delay: 1.4s;
+            }
+            
+            .loading-title {
+                color: white;
+                font-size: 28px;
+                margin: 20px 0;
+                animation: slideUp 0.6s ease;
+            }
+            
+            .loading-steps {
+                margin: 30px 0;
+                animation: slideUp 0.8s ease;
+            }
+            
+            .step {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 15px;
+                padding: 15px;
+                margin: 10px auto;
+                max-width: 400px;
+                background: rgba(255,255,255,0.1);
+                border-radius: 12px;
+                color: white;
+                opacity: 0.5;
+                transition: all 0.3s ease;
+            }
+            
+            .step-icon {
+                font-size: 24px;
+                animation: bounce 2s ease-in-out infinite;
+            }
+            
+            .step-text {
+                font-size: 16px;
+                font-weight: 500;
+            }
+            
+            .step.active {
+                opacity: 1;
+                background: rgba(255,255,255,0.2);
+                transform: scale(1.05);
+            }
+            
+            .step-1 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 0s; }
+            .step-2 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 2s; }
+            .step-3 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 4s; }
+            .step-4 { animation: stepActivate 8s ease-in-out infinite; animation-delay: 6s; }
+            
+            .spinner-container {
+                margin: 40px 0 30px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                animation: slideUp 1s ease;
+            }
+            
+            .spinner {
+                width: 60px;
+                height: 60px;
+                border: 5px solid rgba(255,255,255,0.2);
+                border-top-color: white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            .loading-subtext {
+                color: rgba(255,255,255,0.8);
+                font-size: 14px;
+                animation: slideUp 1.2s ease;
+            }
+            
+            @keyframes spin {
+                to { transform: rotate(360deg); }
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            @keyframes float {
+                0%, 100% { transform: translateY(0px); }
+                50% { transform: translateY(-20px); }
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.05); }
+            }
+            
+            @keyframes cellPulse {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
+            }
+            
+            @keyframes cellGlow {
+                0%, 100% { 
+                    box-shadow: 0 0 5px rgba(102,126,234,0.5);
+                    transform: scale(1);
+                }
+                50% { 
+                    box-shadow: 0 0 20px rgba(102,126,234,1);
+                    transform: scale(1.1);
+                }
+            }
+            
+            @keyframes sparkle {
+                0%, 100% { 
+                    opacity: 0;
+                    transform: scale(0);
+                }
+                50% { 
+                    opacity: 1;
+                    transform: scale(1);
+                }
+            }
+            
+            @keyframes slideUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            @keyframes bounce {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-5px); }
+            }
+            
+            @keyframes stepActivate {
+                0%, 100% { 
+                    opacity: 0.5;
+                    background: rgba(255,255,255,0.1);
+                    transform: scale(1);
+                }
+                12.5%, 25% { 
+                    opacity: 1;
+                    background: rgba(255,255,255,0.2);
+                    transform: scale(1.05);
+                }
+            }
+        </style>
+        
+        <script>
+            var progressText = document.getElementById('progressText');
+            var generationComplete = false;
+            
+            // Update status text periodically
+            var statusMessages = [
+                'Analyzing your courses...',
+                'Optimizing study times...',
+                'Generating personalized tips...',
+                'Building your calendar...'
+            ];
+            var messageIndex = 0;
+            
+            function updateStatus() {
+                if (!generationComplete) {
+                    progressText.textContent = statusMessages[messageIndex];
+                    messageIndex = (messageIndex + 1) % statusMessages.length;
+                    setTimeout(updateStatus, 5000);
+                }
+            }
+            
+            // Start status updates
+            updateStatus();
+            
+            // Load the actual generation in an iframe
+            var iframe = document.getElementById('generationFrame');
+            iframe.onload = function() {
+                // Generation complete - redirect immediately to results
+                generationComplete = true;
+                progressText.textContent = 'Complete! Loading results...';
+                window.location.href = '/show_results';
+            };
+            iframe.src = '/generate_schedule_actual';
+        </script>
+    """
+    
+    return Page(state, [loading_html, loading_styles])
+
+@route  
+def generate_schedule_actual(state: State) -> Page:
+    """Actually generate the schedule with Gemini (called by iframe)"""
     state.current_step = "generate"
     
     # Prepare course and club information
@@ -781,11 +1735,12 @@ Focus on:
     except Exception as e:
         state.study_events = []
         state.tips = f"❌ Unexpected Error: {str(e)}\n\nPlease try again or check your internet connection."
-        print(f"Exception in generate_schedule: {e}")
+        print(f"Exception in generate_schedule_actual: {e}")
         import traceback
         traceback.print_exc()
     
-    return show_results(state)
+    # Return a simple completion page for the iframe
+    return Page(state, ["<html><body><h1>Generation Complete</h1></body></html>"])
 
 @route
 def show_results(state: State) -> Page:
@@ -843,20 +1798,26 @@ def show_results(state: State) -> Page:
     class_events = []
     if state.courses and state.semester_start and state.semester_end:
         try:
+            print(f"Generating class events for {len(state.courses)} courses")
             semester_start = datetime.strptime(state.semester_start, '%Y-%m-%d')
             semester_end = datetime.strptime(state.semester_end, '%Y-%m-%d')
             
             for course in state.courses:
+                print(f"Processing course: {course.name}, Days: {course.days}, Time: {course.time}")
                 weekdays = parse_days(course.days)
                 time_parts = parse_time_range(course.time)
                 
+                print(f"  Parsed weekdays: {weekdays}, time_parts: {time_parts}")
+                
                 if not weekdays or not time_parts:
+                    print(f"  Skipping course {course.name} - invalid days or time")
                     continue
                 
                 start_hour, start_min, end_hour, end_min = time_parts
                 
                 # Generate events for each occurrence of the class
                 current_date = semester_start
+                event_count = 0
                 while current_date <= semester_end:
                     if current_date.weekday() in weekdays:
                         class_start = current_date.replace(hour=start_hour, minute=start_min, second=0)
@@ -875,10 +1836,16 @@ def show_results(state: State) -> Page:
                                 "description": f"Class: {course.name}"
                             }
                         })
+                        event_count += 1
                     
                     current_date += timedelta(days=1)
+                print(f"  Generated {event_count} class meetings for {course.name}")
         except Exception as e:
             print(f"Error generating class events: {e}")
+            import traceback
+            traceback.print_exc()
+    
+    print(f"Total class events generated: {len(class_events)}")
     
     # Convert StudyEvent objects to JSON for JavaScript (study sessions)
     study_events = [
@@ -1046,6 +2013,12 @@ def show_results(state: State) -> Page:
             "<div style='flex: 1;'>",
             change_color(Header("📅 Interactive Schedule Calendar", 2), "#667eea"),
             "<p id='event-count' style='color: #666;'>Showing " + str(len(state.study_events) + len(class_events)) + " events (" + str(len(state.study_events)) + " study sessions, " + str(len(class_events)) + " class meetings)</p>",
+            (f"<div style='padding: 20px; background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; margin-bottom: 20px;'>"
+             f"<strong>⚠️ Debug Info:</strong><br>"
+             f"Courses: {len(state.courses)}<br>"
+             f"Study Events: {len(state.study_events)}<br>"
+             f"Class Events Generated: {len(class_events)}<br>"
+             f"Semester: {state.semester_start} to {state.semester_end}</div>") if True else "",
             "<div id='calendar' style='background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); min-height: 600px;'></div>",
             "</div>",
             
@@ -1092,6 +2065,19 @@ def show_results(state: State) -> Page:
             LineBreak(),
             HorizontalRule(),
             LineBreak(),
+            
+            # Export Section
+            """<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; border-radius: 12px; color: white; text-align: center;'>
+                <h3 style='margin: 0 0 10px 0;'>📥 Export Your Schedule</h3>
+                <p style='margin: 0 0 15px 0; opacity: 0.9;'>Download as CSV to import into Google Calendar, Outlook, or other calendar apps</p>
+                <a href='/export_csv' style='display: inline-block; background: white; color: #667eea; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; transition: transform 0.2s;' onmouseover='this.style.transform="translateY(-2px)"' onmouseout='this.style.transform="translateY(0)"'>
+                    📥 Download CSV
+                </a>
+            </div>""",
+            
+            LineBreak(),
+            HorizontalRule(),
+            LineBreak(),
             Div(
                 Button("🔄 Start Over", "/"),
                 " ",
@@ -1106,5 +2092,135 @@ def show_results(state: State) -> Page:
             classes="container"
         )
     ])
+
+@route
+def export_csv(state: State) -> Page:
+    """Export all events (study sessions + classes) to CSV format"""
+    from datetime import datetime, timedelta
+    import io
+    
+    # Helper functions (same as in show_results)
+    def parse_days(days_str):
+        day_map = {'M': 0, 'Tu': 1, 'W': 2, 'Th': 3, 'F': 4, 'Sa': 5, 'Su': 6}
+        days = []
+        i = 0
+        while i < len(days_str):
+            if i + 1 < len(days_str) and days_str[i:i+2] in day_map:
+                days.append(day_map[days_str[i:i+2]])
+                i += 2
+            elif days_str[i] in day_map:
+                days.append(day_map[days_str[i]])
+                i += 1
+            else:
+                i += 1
+        return days
+    
+    def parse_time_range(time_str):
+        try:
+            parts = time_str.replace(' ', '').split('-')
+            if len(parts) != 2:
+                return None
+            start_str, end_str = parts
+            if 'AM' in start_str or 'PM' in start_str:
+                start_time = datetime.strptime(start_str, '%I:%M%p')
+            else:
+                start_time = datetime.strptime(start_str, '%H:%M')
+            if 'AM' in end_str or 'PM' in end_str:
+                end_time = datetime.strptime(end_str, '%I:%M%p')
+            else:
+                end_time = datetime.strptime(end_str, '%H:%M')
+            return (start_time.hour, start_time.minute, end_time.hour, end_time.minute)
+        except:
+            return None
+    
+    # Build CSV content
+    csv_lines = []
+    csv_lines.append("Subject,Start Date,Start Time,End Date,End Time,All Day Event,Description,Location")
+    
+    # Add study sessions
+    for event in state.study_events:
+        try:
+            start_dt = datetime.fromisoformat(event.start_datetime)
+            end_dt = datetime.fromisoformat(event.end_datetime)
+            
+            csv_lines.append(
+                f'"{event.title}",'
+                f'{start_dt.strftime("%m/%d/%Y")},'
+                f'{start_dt.strftime("%I:%M %p")},'
+                f'{end_dt.strftime("%m/%d/%Y")},'
+                f'{end_dt.strftime("%I:%M %p")},'
+                f'False,'
+                f'"{event.description}",'
+                f'""'
+            )
+        except Exception as e:
+            print(f"Error exporting study event: {e}")
+    
+    # Add class meetings
+    if state.courses and state.semester_start and state.semester_end:
+        try:
+            semester_start = datetime.strptime(state.semester_start, '%Y-%m-%d')
+            semester_end = datetime.strptime(state.semester_end, '%Y-%m-%d')
+            
+            for course in state.courses:
+                weekdays = parse_days(course.days)
+                time_parts = parse_time_range(course.time)
+                
+                if not weekdays or not time_parts:
+                    continue
+                
+                start_hour, start_min, end_hour, end_min = time_parts
+                
+                current_date = semester_start
+                while current_date <= semester_end:
+                    if current_date.weekday() in weekdays:
+                        class_start = current_date.replace(hour=start_hour, minute=start_min, second=0)
+                        class_end = current_date.replace(hour=end_hour, minute=end_min, second=0)
+                        
+                        csv_lines.append(
+                            f'"{course.name}",'
+                            f'{class_start.strftime("%m/%d/%Y")},'
+                            f'{class_start.strftime("%I:%M %p")},'
+                            f'{class_end.strftime("%m/%d/%Y")},'
+                            f'{class_end.strftime("%I:%M %p")},'
+                            f'False,'
+                            f'"Class: {course.name} - {course.credits} credits",'
+                            f'""'
+                        )
+                    
+                    current_date += timedelta(days=1)
+        except Exception as e:
+            print(f"Error exporting class events: {e}")
+    
+    csv_content = "\n".join(csv_lines)
+    
+    # Return as downloadable file
+    return Page(state, [
+        f"""
+        <script>
+            // Create a blob and trigger download
+            var csvContent = `{csv_content}`;
+            var blob = new Blob([csvContent], {{ type: 'text/csv;charset=utf-8;' }});
+            var link = document.createElement('a');
+            var url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'my_schedule_{state.semester_start}.csv');
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Redirect back to results after a moment
+            setTimeout(function() {{
+                window.location.href = '/show_results';
+            }}, 500);
+        </script>
+        <div style='text-align: center; padding: 50px;'>
+            <h2>📥 Downloading your schedule...</h2>
+            <p>If the download doesn't start automatically, <a href='/show_results'>click here</a> to return to your schedule.</p>
+        </div>
+        """
+    ])
+
 hide_debug_information()
 start_server(State())
